@@ -1,0 +1,542 @@
+import React, { useState } from 'react';
+import { ViewName } from '../App';
+import Layout from '../components/Layout';
+import { getCurrentUser, getUploads, setUploads, setCurrentUser, Upload, addUsage, User, setCurrentDocumentId } from '../store';
+import { motion, AnimatePresence } from 'motion/react';
+import { FileUp, Link as LinkIcon, Type, CheckCircle2, Loader2, UploadCloud, Layers, FileText, Lock, Sparkles, X } from 'lucide-react';
+import { GoogleGenAI } from '@google/genai';
+
+interface Props {
+  navigate: (view: ViewName) => void;
+  user: User | null;
+}
+
+export default function UploadView({ navigate, user }: Props) {
+  const [activeTab, setActiveTab] = useState<'file' | 'url' | 'text'>('file');
+  const [loading, setLoading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [url, setUrl] = useState('');
+  const [urlError, setUrlError] = useState('');
+  const [urlContent, setUrlContent] = useState('');
+
+  const validateUrl = (value: string) => {
+    if (value && !/^https?:\/\/[^\s$.?#].[^\s]*$/.test(value)) {
+      setUrlError('Invalid URL format');
+    } else {
+      setUrlError('');
+    }
+  };
+  const [fetchError, setFetchError] = useState('');
+  const [fetchSuccess, setFetchSuccess] = useState('');
+  const [text, setText] = useState('');
+  const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
+
+  const [toggles, setToggles] = useState({
+    flashcards: true,
+    notes: true,
+    quiz: false
+  });
+
+  const isReady = (activeTab === 'file' && selectedFiles.length > 0) || (activeTab === 'url' && !!urlContent) || (activeTab === 'text' && !!text);
+
+  if (!user) return null;
+
+  const isFree = user.plan === 'free';
+  const uploadsUsed = user.uploadsUsed || 0;
+  const uploadLimit = 3;
+  const remainingUploads = uploadLimit - uploadsUsed;
+  const atLimit = isFree && uploadsUsed >= uploadLimit;
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [error, setError] = useState('');
+
+  const validateAndAddFiles = (newFiles: FileList | File[]) => {
+    const validFiles: File[] = [];
+    let errorMessage = '';
+
+    Array.from(newFiles).forEach(selectedFile => {
+      // Check file size
+      if (selectedFile.size > 2 * 1024 * 1024) {
+        errorMessage = 'Some files were too large (Max 2MB).';
+        return;
+      }
+
+      // Check file type
+      const validTypes = [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+        'image/png',
+        'image/jpeg'
+      ];
+      
+      const fileExtension = '.' + selectedFile.name.split('.').pop()?.toLowerCase();
+      const validExtensions = ['.pdf', '.docx', '.txt', '.png', '.jpg', '.jpeg'];
+
+      if (!validTypes.includes(selectedFile.type) && !validExtensions.includes(fileExtension)) {
+        errorMessage = 'Some files had invalid types.';
+        return;
+      }
+
+      validFiles.push(selectedFile);
+    });
+
+    if (errorMessage) setError(errorMessage);
+    else setError('');
+
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      validateAndAddFiles(e.target.files);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files) {
+      validateAndAddFiles(e.dataTransfer.files);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleFetchUrl = async () => {
+    if (!url) return;
+    setLoading(true);
+    setFetchError('');
+    setFetchSuccess('');
+    
+    try {
+      const response = await fetch('/api/fetch-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch URL content');
+      }
+      
+      const data = await response.json();
+      setUrlContent(data.content);
+      setFetchSuccess('Content fetched successfully!');
+    } catch (err) {
+      setFetchError('Invalid URL or failed to fetch content.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (atLimit) return;
+    if (activeTab === 'file' && selectedFiles.length === 0) return;
+    if (activeTab === 'url' && !urlContent) return;
+    if (activeTab === 'text' && !text) return;
+
+    // Check limit for multiple files
+    if (isFree && uploadsUsed + (activeTab === 'file' ? selectedFiles.length : 1) > uploadLimit) {
+      setError(`You can only upload ${remainingUploads} more file(s) this month.`);
+      return;
+    }
+
+    setLoading(true);
+    setShowLoadingOverlay(true);
+    setError('');
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const currentUploads = getUploads();
+      let lastUploadedId: number | null = null;
+      let newUploadsCount = 0;
+
+      const processContent = async (content: string, filename: string, type: string) => {
+        const newUpload: Upload = {
+          id: Date.now() + Math.random(),
+          userId: user.id,
+          filename,
+          type,
+          date: new Date().toISOString(),
+          content
+        };
+
+        // Generate thumbnail
+        try {
+          const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: {
+              parts: [
+                {
+                  text: `A professional thumbnail representing a ${type} document titled ${filename}`,
+                },
+              ],
+            },
+          });
+          
+          for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData) {
+              const base64EncodeString = part.inlineData.data;
+              newUpload.thumbnail = `data:image/jpeg;base64,${base64EncodeString}`;
+              break;
+            }
+          }
+        } catch (err) {
+          console.error('Failed to generate thumbnail', err);
+        }
+
+        return newUpload;
+      };
+
+      const newUploadObjects: Upload[] = [];
+
+      if (activeTab === 'file') {
+        for (const file of selectedFiles) {
+          const fileContent = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string || '');
+            reader.onerror = (e) => reject(e);
+            reader.readAsDataURL(file);
+          });
+          const obj = await processContent(fileContent, file.name, 'file');
+          newUploadObjects.push(obj);
+          newUploadsCount++;
+        }
+      } else if (activeTab === 'text') {
+        const obj = await processContent(text, 'Pasted Text', 'text');
+        newUploadObjects.push(obj);
+        newUploadsCount++;
+      } else if (activeTab === 'url') {
+        const obj = await processContent(urlContent, url, 'url');
+        newUploadObjects.push(obj);
+        newUploadsCount++;
+      }
+
+      setUploads([...newUploadObjects, ...currentUploads]);
+      addUsage('doc');
+      lastUploadedId = newUploadObjects[0].id;
+
+      const updatedUser = { ...user, uploadsUsed: uploadsUsed + newUploadsCount };
+      setCurrentUser(updatedUser);
+      
+      const users = JSON.parse(localStorage.getItem('sf_users') || '[]');
+      const userIndex = users.findIndex((u: any) => u && u.id === user.id);
+      if (userIndex > -1) {
+        users[userIndex] = updatedUser;
+        localStorage.setItem('sf_users', JSON.stringify(users));
+      }
+
+      if (lastUploadedId) {
+        setCurrentDocumentId(lastUploadedId);
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      setLoading(false);
+      setShowLoadingOverlay(false);
+      
+      if (toggles.notes) {
+        navigate('notes');
+      } else {
+        navigate('flashcards');
+      }
+    } catch (error) {
+      console.error('Error processing upload:', error);
+      setLoading(false);
+      setShowLoadingOverlay(false);
+      setError('Failed to process the input. Please try again.');
+    }
+  };
+
+  return (
+    <Layout navigate={navigate} activeView="upload">
+      <div className="p-4 md:p-8 max-w-4xl mx-auto">
+        <h1 className="text-2xl md:text-3xl font-bold mb-2">Upload Study Material</h1>
+        <p className="text-gray-400 mb-8 text-sm md:text-base">Upload any document and let AI generate your study tools instantly</p>
+
+        {/* Limit Bar */}
+        {isFree && (
+          <div className="bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl p-4 mb-8">
+            <div className="flex justify-between text-xs md:text-sm mb-2">
+              <span className="text-gray-400">Free Plan: <strong className="text-amber-400">{uploadsUsed} of {uploadLimit}</strong> uploads used this month</span>
+            </div>
+            <div className="w-full bg-[#0F0E17] rounded-full h-2">
+              <div 
+                className="bg-gradient-gold h-2 rounded-full transition-all duration-500" 
+                style={{ width: `${(uploadsUsed / uploadLimit) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div className="flex flex-wrap gap-2 mb-6 bg-[#1A1830] p-1 rounded-xl w-full sm:w-fit border border-[rgba(124,58,237,0.2)]">
+          <button 
+            onClick={() => setActiveTab('file')}
+            className={`flex-1 sm:flex-none flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'file' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
+          >
+            <FileUp className="w-4 h-4 mr-2" /> File
+          </button>
+          <button 
+            onClick={() => setActiveTab('url')}
+            className={`flex-1 sm:flex-none flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'url' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
+          >
+            <LinkIcon className="w-4 h-4 mr-2" /> URL
+          </button>
+          <button 
+            onClick={() => setActiveTab('text')}
+            className={`flex-1 sm:flex-none flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'text' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
+          >
+            <Type className="w-4 h-4 mr-2" /> Text
+          </button>
+        </div>
+
+        {/* Upload Area */}
+        <div className="glass-card rounded-2xl p-8 mb-8 relative overflow-hidden">
+          {atLimit && (
+            <div className="absolute inset-0 z-10 backdrop-blur-sm bg-[#0F0E17]/80 flex flex-col items-center justify-center">
+              <Lock className="w-12 h-12 text-amber-400 mb-4" />
+              <h3 className="text-xl font-bold mb-2">Upload Limit Reached</h3>
+              <p className="text-gray-400 mb-4">Upgrade to Pro for unlimited uploads.</p>
+              <button onClick={() => navigate('pricing')} className="bg-gradient-gold text-white px-6 py-3 rounded-xl font-bold hover-glow">
+                Upgrade Plan &rarr;
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'file' && (
+            <div 
+              className={`border-2 border-dashed rounded-xl p-12 flex flex-col items-center justify-center text-center transition-all duration-300 cursor-pointer relative ${
+                isDragging 
+                  ? 'border-4 border-indigo-500 bg-indigo-500/20 scale-[1.02] shadow-xl shadow-indigo-500/20' 
+                  : 'border-[rgba(124,58,237,0.4)] hover:bg-[#211F35]'
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <input 
+                type="file" 
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                onChange={handleFileChange}
+                accept=".pdf,.docx,.txt,.png,.jpg"
+                multiple
+              />
+              <UploadCloud className={`w-16 h-16 mb-4 transition-all duration-300 ${isDragging ? 'text-indigo-200 scale-110' : 'text-indigo-400'}`} />
+              <h3 className="text-lg font-bold mb-2">
+                {isDragging ? 'Drop your files here' : 'Drag & Drop your files here'}
+              </h3>
+              <p className="text-gray-400 text-sm mb-6">or click to browse from your computer (Max 2MB per file)</p>
+              
+              {error && <p className="text-red-400 text-sm mb-4 font-medium bg-red-500/10 px-4 py-2 rounded-lg">{error}</p>}
+              {selectedFiles.length > 0 && !error && <p className="text-emerald-400 text-sm mb-4 font-medium bg-emerald-500/10 px-4 py-2 rounded-lg">{selectedFiles.length} file(s) ready!</p>}
+              
+              {selectedFiles.length > 0 ? (
+                <div className="space-y-2 w-full max-w-md">
+                  {selectedFiles.map((file, idx) => (
+                    <div key={idx} className="bg-[#1A1830] border border-indigo-500/30 px-4 py-3 rounded-xl flex items-center justify-between group/item">
+                      <div className="flex items-center min-w-0">
+                        <CheckCircle2 className="w-4 h-4 mr-3 text-emerald-400 flex-shrink-0" />
+                        <span className="font-semibold text-white truncate text-sm" title={file.name}>{file.name}</span>
+                        <span className="ml-3 text-[10px] text-gray-500 bg-[#0F0E17] px-2 py-0.5 rounded border border-[rgba(124,58,237,0.2)] uppercase">
+                          {file.name.split('.').pop()}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
+                        className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  <div className="pt-2 text-center">
+                    <span className="text-xs text-indigo-400 font-medium hover:text-indigo-300 transition-colors">
+                      + Add more files
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className={`border px-6 py-2 rounded-lg text-sm font-medium text-white transition-colors ${
+                  isDragging ? 'bg-indigo-500 border-indigo-400' : 'bg-[#1A1830] border-[rgba(124,58,237,0.2)]'
+                }`}>
+                  Browse Files
+                </div>
+              )}
+              
+              <div className="flex gap-2 mt-6">
+                <span className="text-xs font-mono bg-[#0F0E17] text-gray-500 px-2 py-1 rounded">PDF</span>
+                <span className="text-xs font-mono bg-[#0F0E17] text-gray-500 px-2 py-1 rounded">DOCX</span>
+                <span className="text-xs font-mono bg-[#0F0E17] text-gray-500 px-2 py-1 rounded">TXT</span>
+                <span className="text-xs font-mono bg-[#0F0E17] text-gray-500 px-2 py-1 rounded">PNG</span>
+                <span className="text-xs font-mono bg-[#0F0E17] text-gray-500 px-2 py-1 rounded">JPG</span>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'url' && (
+            <div className="p-6">
+              <label className="block text-sm font-medium text-gray-400 mb-2">Paste URL</label>
+              <div className="flex gap-2">
+                <input 
+                  type="url" 
+                  value={url}
+                  onChange={e => { setUrl(e.target.value); validateUrl(e.target.value); }}
+                  placeholder="https://..."
+                  className={`flex-1 bg-[#0F0E17] border ${urlError ? 'border-red-500' : 'border-[rgba(124,58,237,0.2)]'} rounded-xl px-4 py-4 text-white focus:outline-none focus:border-indigo-500 transition-colors`}
+                />
+                {urlError && <p className="text-red-400 text-xs mt-1">{urlError}</p>}
+                <button 
+                  onClick={handleFetchUrl}
+                  disabled={loading || !url}
+                  className="bg-indigo-600 text-white rounded-xl px-6 py-4 font-bold hover:bg-indigo-700 transition-colors"
+                >
+                  {loading ? 'Fetching...' : 'Fetch'}
+                </button>
+              </div>
+              {fetchError && <p className="text-red-400 text-sm mt-2">{fetchError}</p>}
+              {fetchSuccess && <p className="text-emerald-400 text-sm mt-2">{fetchSuccess}</p>}
+            </div>
+          )}
+
+          {activeTab === 'text' && (
+            <div className="p-6">
+              <label className="block text-sm font-medium text-gray-400 mb-2">Paste Study Material Text</label>
+              <textarea 
+                value={text}
+                onChange={e => setText(e.target.value)}
+                placeholder="Paste your notes, article, or textbook excerpt here..."
+                rows={8}
+                className="w-full bg-[#0F0E17] border border-[rgba(124,58,237,0.2)] rounded-xl px-4 py-4 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
+              ></textarea>
+            </div>
+          )}
+        </div>
+
+        {/* Generation Options */}
+        {isReady && (
+          <div className="glass-card rounded-2xl p-6 mb-8">
+            <h3 className="text-lg font-bold mb-4">Generation Options</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Flashcard Difficulty</label>
+                <select 
+                  value={user.settings?.flashcardDifficulty || 'medium'}
+                  onChange={(e) => {
+                    const newSettings = { ...user.settings, flashcardDifficulty: e.target.value as any };
+                    setCurrentUser({ ...user, settings: newSettings });
+                  }}
+                  className="w-full bg-[#0F0E17] border border-[rgba(124,58,237,0.2)] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Note Style</label>
+                <select 
+                  value={user.settings?.noteStyle || 'detailed'}
+                  onChange={(e) => {
+                    const newSettings = { ...user.settings, noteStyle: e.target.value as any };
+                    setCurrentUser({ ...user, settings: newSettings });
+                  }}
+                  className="w-full bg-[#0F0E17] border border-[rgba(124,58,237,0.2)] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                  <option value="concise">Concise</option>
+                  <option value="detailed">Detailed</option>
+                  <option value="bulleted">Bulleted</option>
+                </select>
+              </div>
+            </div>
+
+            <h3 className="text-lg font-bold mb-4">Generate Study Materials</h3>
+            <div className="space-y-4">
+              {Object.entries(toggles).map(([key, value]) => (
+                <div key={key} className="flex items-center justify-between">
+                  <div className="flex items-center text-gray-300 capitalize">
+                    {key === 'flashcards' && <Layers className="w-4 h-4 mr-3 text-indigo-400" />}
+                    {key === 'notes' && <FileText className="w-4 h-4 mr-3 text-purple-400" />}
+                    {key === 'quiz' && <span className="w-4 h-4 mr-3 text-emerald-400 font-bold">?</span>}
+                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                  </div>
+                  <button 
+                    onClick={() => setToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof toggles] }))}
+                    className={`w-12 h-6 rounded-full relative transition-colors ${value ? 'bg-indigo-500' : 'bg-[#0F0E17] border border-[rgba(124,58,237,0.2)]'}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${value ? 'translate-x-7' : 'translate-x-1'}`}></div>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <button 
+          onClick={handleUpload}
+          disabled={loading || atLimit || !isReady}
+          className={`w-full bg-gradient-gold text-white rounded-xl px-4 py-4 font-bold text-lg flex justify-center items-center transition-all ${loading || atLimit || !isReady ? 'opacity-50 cursor-not-allowed' : 'hover-glow'}`}
+        >
+          {loading ? (
+            <><Loader2 className="w-6 h-6 mr-2 animate-spin" /> Generating Magic...</>
+          ) : (
+            <>⚡ Generate Study Materials</>
+          )}
+        </button>
+      </div>
+
+      {/* Loading Overlay */}
+      <AnimatePresence>
+        {showLoadingOverlay && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F0E17]/80 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#211F35] border border-[rgba(124,58,237,0.3)] p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm w-full mx-4"
+            >
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-indigo-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
+                <div className="relative bg-[#0F0E17] p-4 rounded-full border border-indigo-500/50">
+                  <Sparkles className="w-10 h-10 text-indigo-400 animate-pulse" />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2 text-center">Generating Magic...</h3>
+              <p className="text-gray-400 text-center text-sm mb-6">
+                Analyzing your content and creating personalized study materials.
+              </p>
+              
+              <div className="w-full bg-[#0F0E17] rounded-full h-2 mb-2 overflow-hidden">
+                <motion.div 
+                  className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full"
+                  initial={{ width: "0%" }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 1.5, ease: "easeInOut" }}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </Layout>
+  );
+}
