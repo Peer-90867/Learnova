@@ -40,7 +40,7 @@ export default function Layout({ navigate, children, activeView, hideSidebar = f
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 border-b border-[rgba(124,58,237,0.2)] bg-[var(--color-bg-card)] sticky top-0 z-30">
         <div className="text-xl font-bold text-gradient cursor-pointer" onClick={() => navigate('dashboard')}>
-          🧪 StudyForge AI
+          🧪 CramLab
         </div>
         <button 
           className="p-2 bg-[var(--color-bg-surface)] rounded-lg text-[var(--color-text)]"
@@ -67,7 +67,7 @@ export default function Layout({ navigate, children, activeView, hideSidebar = f
         `}>
           <div className="p-6 border-b border-[rgba(124,58,237,0.2)]">
             <div className="text-xl font-bold text-gradient cursor-pointer" onClick={() => navigate('dashboard')}>
-              🧪 StudyForge AI
+              🧪 CramLab
             </div>
           </div>
 

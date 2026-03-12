@@ -106,7 +106,7 @@ export default function AuthView({ navigate }: Props) {
           animate={{ opacity: 1, x: 0 }}
           className="z-10"
         >
-          <div className="text-2xl font-bold text-white mb-8">🧪 StudyForge AI</div>
+          <div className="text-2xl font-bold text-white mb-8">🧪 CramLab</div>
           <h1 className="text-5xl font-bold text-white mb-6 leading-tight">
             Study Smarter,<br />Not Harder 🚀
           </h1>
