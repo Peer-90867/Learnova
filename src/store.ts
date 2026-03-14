@@ -108,6 +108,14 @@ export interface PlannedTask {
   completed: boolean;
 }
 
+export interface ChatMessage {
+  id: string;
+  userId: number;
+  userName: string;
+  text: string;
+  timestamp: string;
+}
+
 export interface StudyGroup {
   id: number;
   name: string;
@@ -116,6 +124,17 @@ export interface StudyGroup {
   members: number[]; // user IDs
   sharedUploadIds: number[];
   createdAt: string;
+  subject?: string;
+  password?: string;
+  chatHistory: ChatMessage[];
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  unlockedAt?: string;
 }
 
 export interface User {
@@ -127,6 +146,11 @@ export interface User {
   subscriptionStatus: 'none' | 'pending' | 'active' | 'rejected';
   uploadsUsed: number;
   createdAt: string;
+  streak: number;
+  lastActiveDate?: string;
+  achievements: Achievement[];
+  studyGoal?: number; // target hours per week
+  dailyGoal?: number; // target tasks per day
   settings?: {
     flashcardDifficulty: 'easy' | 'medium' | 'hard';
     noteStyle: 'concise' | 'detailed' | 'bulleted';
@@ -170,6 +194,23 @@ export const getStore = <T>(key: string, defaultValue: T): T => {
     return val ? JSON.parse(val) : defaultValue;
   } catch {
     return defaultValue;
+  }
+};
+
+export const getCache = <T>(key: string): T | null => {
+  try {
+    const val = localStorage.getItem(`sf_cache_${key}`);
+    return val ? JSON.parse(val) : null;
+  } catch {
+    return null;
+  }
+};
+
+export const setCache = <T>(key: string, value: T) => {
+  try {
+    localStorage.setItem(`sf_cache_${key}`, JSON.stringify(value));
+  } catch (e) {
+    console.error('Failed to save to cache', e);
   }
 };
 
@@ -235,6 +276,70 @@ export const setStudyGroups = (groups: StudyGroup[]) => setStore('sf_study_group
 
 export const getCurrentDocumentId = (): number | null => getStore<number | null>('sf_current_document_id', null);
 export const setCurrentDocumentId = (id: number | null) => setStore('sf_current_document_id', id);
+
+export const getTheme = (): 'light' | 'dark' => getStore<'light' | 'dark'>('sf_theme', 'dark');
+export const setTheme = (theme: 'light' | 'dark') => {
+  setStore('sf_theme', theme);
+  document.documentElement.classList.toggle('light', theme === 'light');
+  window.dispatchEvent(new Event('theme-updated'));
+};
+
+export const updateStreak = () => {
+  const user = getCurrentUser();
+  if (!user) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  const lastActive = user.lastActiveDate;
+
+  if (lastActive === today) return;
+
+  let newStreak = user.streak || 0;
+  if (lastActive) {
+    const lastDate = new Date(lastActive);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    if (lastActive === yesterdayStr) {
+      newStreak += 1;
+    } else {
+      newStreak = 1;
+    }
+  } else {
+    newStreak = 1;
+  }
+
+  const updatedUser = { ...user, streak: newStreak, lastActiveDate: today };
+  setCurrentUser(updatedUser);
+  
+  const users = getUsers();
+  setUsers(users.map(u => u.id === user.id ? updatedUser : u));
+};
+
+export const unlockAchievement = (achievementId: string) => {
+  const user = getCurrentUser();
+  if (!user) return;
+
+  if (user.achievements.some(a => a.id === achievementId && a.unlockedAt)) return;
+
+  const updatedAchievements = user.achievements.map(a => 
+    a.id === achievementId ? { ...a, unlockedAt: new Date().toISOString() } : a
+  );
+
+  const updatedUser = { ...user, achievements: updatedAchievements };
+  setCurrentUser(updatedUser);
+  
+  const users = getUsers();
+  setUsers(users.map(u => u.id === user.id ? updatedUser : u));
+};
+
+export const INITIAL_ACHIEVEMENTS: Achievement[] = [
+  { id: 'first_upload', title: 'First Step', description: 'Upload your first document', icon: '🚀' },
+  { id: 'streak_3', title: 'Consistent', description: 'Maintain a 3-day study streak', icon: '🔥' },
+  { id: 'quiz_master', title: 'Quiz Master', description: 'Get 100% on a mock exam', icon: '🎯' },
+  { id: 'focus_pro', title: 'Deep Focus', description: 'Complete 5 focus sessions', icon: '🧘' },
+  { id: 'collaborator', title: 'Team Player', description: 'Join or create a study group', icon: '🤝' }
+];
 
 export const isAdmin = (): boolean => {
   try {

@@ -1,5 +1,7 @@
 {
   "name": "CramLab",
   "description": "An AI-powered study platform with smart notes, flashcards, mind maps, focus timers, and collaborative study hubs.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

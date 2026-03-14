@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ViewName } from '../App';
 import Layout from '../components/Layout';
-import { getCurrentUser, getCurrentDocumentId, getUploads, addUsage, getPresentations, setPresentations, Presentation, Slide, User } from '../store';
+import { getCurrentUser, getCurrentDocumentId, getUploads, addUsage, getPresentations, setPresentations, Presentation, Slide, User, getCache, setCache } from '../store';
 import { motion, AnimatePresence } from 'motion/react';
-import { Presentation as PresentationIcon, ChevronLeft, ChevronRight, Play, Download, Loader2, Image as ImageIcon, Sparkles, RefreshCw, UploadCloud, Plus, Copy, CheckCircle2, X, Share2 } from 'lucide-react';
+import { Presentation as PresentationIcon, ChevronLeft, ChevronRight, Play, Download, Loader2, Image as ImageIcon, Sparkles, RefreshCw, UploadCloud, Plus, Copy, CheckCircle2, X, Share2, Save } from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { jsPDF } from 'jspdf';
 
@@ -46,6 +46,14 @@ export default function PresentationView({ navigate, user }: Props) {
       const uploads = getUploads();
       const doc = uploads.find(u => u.id === docId);
       if (!doc || !doc.content) throw new Error('Document content not found');
+
+      // Check cache
+      const cached = getCache<Presentation>(`presentation_${doc.id}`);
+      if (cached) {
+        setPresentation(cached);
+        setLoading(false);
+        return;
+      }
 
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
@@ -93,6 +101,7 @@ export default function PresentationView({ navigate, user }: Props) {
       allPresentations.push(newPresentation);
       setPresentations(allPresentations);
       setPresentation(newPresentation);
+      setCache(`presentation_${docId}`, newPresentation);
       addUsage('presentation');
     } catch (error: any) {
       console.error('Failed to generate presentation:', error);
@@ -377,6 +386,22 @@ export default function PresentationView({ navigate, user }: Props) {
               </button>
               <button 
                 onClick={() => {
+                  if (presentation) {
+                    const allPresentations = getPresentations();
+                    const index = allPresentations.findIndex(p => p.id === presentation.id);
+                    if (index !== -1) {
+                      allPresentations[index] = presentation;
+                      setPresentations(allPresentations);
+                      alert('Presentation saved!');
+                    }
+                  }
+                }}
+                className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+              >
+                <Save className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Save
+              </button>
+              <button 
+                onClick={() => {
                   if (navigator.share) {
                     navigator.share({
                       title: presentation.title,
@@ -458,9 +483,10 @@ export default function PresentationView({ navigate, user }: Props) {
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={currentSlide}
-                    initial={{ opacity: 0, x: 20 }}
+                    initial={{ opacity: 0, x: 50 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
+                    exit={{ opacity: 0, x: -50 }}
+                    transition={{ duration: 0.4, ease: "easeInOut" }}
                     className="absolute inset-0 flex flex-col p-12"
                   >
                     <div className="flex-1 flex flex-col md:flex-row gap-8">
@@ -744,16 +770,17 @@ export default function PresentationView({ navigate, user }: Props) {
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={currentSlide}
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 1.02 }}
-                    className="w-full h-full max-w-7xl max-h-[85vh] bg-[#1A1830] rounded-2xl md:rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden flex flex-col md:flex-row"
+                    initial={{ opacity: 0, x: 100 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -100 }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                    className="w-full h-full max-w-7xl max-h-full bg-[#1A1830] rounded-2xl md:rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden flex flex-col md:flex-row aspect-video"
                   >
                     <div className="flex-1 p-6 md:p-12 lg:p-16 flex flex-col justify-center overflow-y-auto custom-scrollbar">
                       <motion.h3 
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-2xl md:text-4xl lg:text-5xl font-black text-white mb-6 md:mb-10 leading-tight"
+                        className="text-2xl md:text-4xl lg:text-6xl font-black text-white mb-6 md:mb-10 leading-tight"
                       >
                         {presentation.slides[currentSlide].title}
                       </motion.h3>

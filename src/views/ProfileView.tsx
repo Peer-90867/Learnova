@@ -12,6 +12,8 @@ interface Props {
 
 export default function ProfileView({ navigate, user }: Props) {
   const [name, setName] = useState(user?.name || '');
+  const [studyGoal, setStudyGoal] = useState(user?.studyGoal?.toString() || '');
+  const [dailyGoal, setDailyGoal] = useState(user?.dailyGoal?.toString() || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -90,6 +92,8 @@ export default function ProfileView({ navigate, user }: Props) {
       const updatedUser = {
         ...users[userIndex],
         name: name,
+        studyGoal: parseInt(studyGoal) || 0,
+        dailyGoal: parseInt(dailyGoal) || 0,
         password: password ? btoa(password) : users[userIndex].password
       };
 
@@ -174,6 +178,26 @@ export default function ProfileView({ navigate, user }: Props) {
               />
               {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Study Goal (hrs/wk)</label>
+                <input
+                  type="number"
+                  value={studyGoal}
+                  onChange={(e) => setStudyGoal(e.target.value)}
+                  className="w-full bg-[var(--color-bg)] border border-[rgba(124,58,237,0.2)] rounded-xl px-4 py-3 text-[var(--color-text)] focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Daily Goal (tasks)</label>
+                <input
+                  type="number"
+                  value={dailyGoal}
+                  onChange={(e) => setDailyGoal(e.target.value)}
+                  className="w-full bg-[var(--color-bg)] border border-[rgba(124,58,237,0.2)] rounded-xl px-4 py-3 text-[var(--color-text)] focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">New Password (leave blank to keep current)</label>
               <input
@@ -204,6 +228,16 @@ export default function ProfileView({ navigate, user }: Props) {
               className="w-full bg-gradient-primary text-white py-3 rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center"
             >
               {loading ? 'Updating...' : <><Save className="w-5 h-5 mr-2" /> Save Changes</>}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentUser(null);
+                navigate('landing');
+              }}
+              className="w-full bg-red-500/10 text-red-400 py-3 rounded-xl font-bold hover:bg-red-500/20 transition-colors flex items-center justify-center"
+            >
+              Logout
             </button>
           </form>
         </motion.div>

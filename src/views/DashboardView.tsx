@@ -3,7 +3,7 @@ import { ViewName } from '../App';
 import Layout from '../components/Layout';
 import { getCurrentUser, getUploads, Upload, setCurrentDocumentId, getUsage, User } from '../store';
 import { motion } from 'motion/react';
-import { FileText, Layers, Clock, Target, UploadCloud, MessageSquare, Lock, TrendingUp, TrendingDown, Presentation, CheckCircle2, Search } from 'lucide-react';
+import { FileText, Layers, Clock, Target, UploadCloud, MessageSquare, Lock, TrendingUp, TrendingDown, Presentation, CheckCircle2, Search, Trophy, Star, Flame, Sparkles, ArrowRight, Activity } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 
 interface Props {
@@ -65,6 +65,39 @@ export default function DashboardView({ navigate, user }: Props) {
   };
 
   const isFree = user.plan === 'free';
+  const studyGoal = user.studyGoal || 20; // Default 20 hours
+  const currentStudyHours = Math.round(usage.filter(u => u.type === 'focus').reduce((acc, curr) => acc + (curr.duration || 0), 0) / 60);
+  const goalProgress = Math.min(Math.round((currentStudyHours / studyGoal) * 100), 100);
+
+  const recommendations = React.useMemo(() => {
+    const recs = [];
+    const now = new Date();
+    const hour = now.getHours();
+
+    // 1. Suggest Focus Session during peak times
+    const isPeakTime = (hour >= 9 && hour <= 11) || (hour >= 14 && hour <= 16) || (hour >= 19 && hour <= 21);
+    if (isPeakTime) {
+      recs.push({ title: 'Start a Focus Session', type: 'focus', reason: 'It\'s a great time for deep work!' });
+    }
+
+    // 2. Suggest reviewing recent uploads
+    const recentUploads = uploads.slice(-2);
+    recentUploads.forEach(u => {
+      const lastUsed = usage.filter(us => us.type === 'doc' && us.date.includes(u.filename)).length;
+      if (lastUsed === 0) {
+        recs.push({ title: `Review ${u.filename}`, type: 'doc', reason: 'You uploaded this recently but haven\'t studied it yet.' });
+      }
+    });
+
+    // 3. Suggest flashcards if notes are high but flashcards are low
+    const noteCount = stats.notes.total;
+    const flashcardCount = stats.flashcards.total;
+    if (noteCount > flashcardCount) {
+      recs.push({ title: 'Create Flashcards', type: 'flashcard', reason: 'Turn your notes into flashcards for better retention.' });
+    }
+
+    return recs.slice(0, 3);
+  }, [usage, uploads, stats]);
 
   const TrendIndicator = ({ value }: { value: number }) => (
     <div className={`flex items-center text-xs font-bold ${value >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -111,35 +144,112 @@ export default function DashboardView({ navigate, user }: Props) {
           </div>
         )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          <div className="glass-card p-6 rounded-2xl">
-            <div className="text-gray-400 text-sm mb-2 flex items-center justify-between">
-              <span className="flex items-center"><Layers className="w-4 h-4 mr-2" /> Flashcards</span>
-              <TrendIndicator value={stats.flashcards.trend} />
+        {/* Stats & Goals */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="glass-card p-6 rounded-2xl hover-glow">
+              <div className="text-gray-400 text-sm mb-2 flex items-center justify-between">
+                <span className="flex items-center"><Layers className="w-4 h-4 mr-2" /> Flashcards</span>
+                <TrendIndicator value={stats.flashcards.trend} />
+              </div>
+              <div className="text-3xl font-bold text-white">{stats.flashcards.total}</div>
             </div>
-            <div className="text-3xl font-bold text-white">{stats.flashcards.total}</div>
+            <div className="glass-card p-6 rounded-2xl hover-glow">
+              <div className="text-gray-400 text-sm mb-2 flex items-center justify-between">
+                <span className="flex items-center"><FileText className="w-4 h-4 mr-2" /> Notes</span>
+                <TrendIndicator value={stats.notes.trend} />
+              </div>
+              <div className="text-3xl font-bold text-white">{stats.notes.total}</div>
+            </div>
+            <div className="glass-card p-6 rounded-2xl hover-glow">
+              <div className="text-gray-400 text-sm mb-2 flex items-center justify-between">
+                <span className="flex items-center"><Flame className="w-4 h-4 mr-2 text-orange-500" /> Streak</span>
+                <div className="text-xs font-bold text-orange-500">{user.streak || 0} Days</div>
+              </div>
+              <div className="text-3xl font-bold text-white">{user.streak || 0}</div>
+            </div>
+            <div className="glass-card p-6 rounded-2xl hover-glow">
+              <div className="text-gray-400 text-sm mb-2 flex items-center justify-between">
+                <span className="flex items-center"><Trophy className="w-4 h-4 mr-2 text-amber-400" /> Badges</span>
+                <div className="text-xs font-bold text-amber-400">{user.achievements?.filter(a => a.unlockedAt).length || 0} Unlocked</div>
+              </div>
+              <div className="text-3xl font-bold text-white">{user.achievements?.filter(a => a.unlockedAt).length || 0}</div>
+            </div>
           </div>
-          <div className="glass-card p-6 rounded-2xl">
-            <div className="text-gray-400 text-sm mb-2 flex items-center justify-between">
-              <span className="flex items-center"><FileText className="w-4 h-4 mr-2" /> Notes</span>
-              <TrendIndicator value={stats.notes.trend} />
+
+          <div className="glass-card p-6 rounded-2xl border border-indigo-500/20 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-white">Weekly Study Goal</h3>
+                <Target className="w-5 h-5 text-indigo-400" />
+              </div>
+              <div className="text-4xl font-bold text-white mb-2">{currentStudyHours}h <span className="text-lg text-gray-500 font-normal">/ {studyGoal}h</span></div>
+              <div className="w-full bg-white/5 rounded-full h-2 mb-4">
+                <div 
+                  className="bg-gradient-primary h-2 rounded-full transition-all duration-1000" 
+                  style={{ width: `${goalProgress}%` }}
+                />
+              </div>
             </div>
-            <div className="text-3xl font-bold text-white">{stats.notes.total}</div>
+            <p className="text-xs text-gray-400">
+              {goalProgress >= 100 
+                ? "🎉 Goal reached! You're crushing it." 
+                : `You need ${studyGoal - currentStudyHours} more hours to reach your weekly goal.`}
+            </p>
           </div>
-          <div className="glass-card p-6 rounded-2xl">
-            <div className="text-gray-400 text-sm mb-2 flex items-center justify-between">
-              <span className="flex items-center"><MessageSquare className="w-4 h-4 mr-2" /> Chats</span>
-              <TrendIndicator value={stats.chats.trend} />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+          {/* Achievements Section */}
+          <div className="lg:col-span-2">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold flex items-center">
+                <Star className="w-5 h-5 mr-2 text-amber-400" />
+                Recent Achievements
+              </h2>
             </div>
-            <div className="text-3xl font-bold text-white">{stats.chats.total}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {(user.achievements || []).slice(0, 3).map(achievement => (
+                <div 
+                  key={achievement.id}
+                  className={`glass-card p-4 rounded-xl border-l-4 transition-all duration-300 ${achievement.unlockedAt ? 'border-amber-500 bg-amber-500/5' : 'border-gray-600 opacity-50'}`}
+                >
+                  <div className="flex items-center">
+                    <div className="text-2xl mr-3">{achievement.icon}</div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold truncate">{achievement.title}</div>
+                      <div className="text-[10px] text-gray-500 line-clamp-1">{achievement.description}</div>
+                    </div>
+                    {achievement.unlockedAt && (
+                      <div className="ml-auto flex-shrink-0">
+                        <CheckCircle2 className="w-4 h-4 text-amber-500" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="glass-card p-6 rounded-2xl">
-            <div className="text-gray-400 text-sm mb-2 flex items-center justify-between">
-              <span className="flex items-center"><UploadCloud className="w-4 h-4 mr-2" /> Docs</span>
-              <TrendIndicator value={stats.docs.trend} />
+
+          {/* Recent Activity Section */}
+          <div>
+            <h2 className="text-xl font-bold mb-6 flex items-center">
+              <Activity className="w-5 h-5 mr-2 text-emerald-400" />
+              Recent Activity
+            </h2>
+            <div className="space-y-3">
+              {usage.slice(-5).reverse().map((u, i) => (
+                <div key={i} className="glass-card p-3 rounded-xl border border-white/5 flex items-center gap-3">
+                  <div className="bg-emerald-500/10 p-2 rounded-lg">
+                    <Activity className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-white capitalize">{u.type}</div>
+                    <div className="text-[10px] text-gray-500">{new Date(u.date).toLocaleDateString()}</div>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="text-3xl font-bold text-white">{stats.docs.total}</div>
           </div>
         </div>
 
@@ -188,6 +298,17 @@ export default function DashboardView({ navigate, user }: Props) {
         {/* Quick Actions */}
         <h2 className="text-xl font-bold mb-6">Quick Actions</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 md:gap-6 mb-12">
+          <button 
+            onClick={() => navigate('focus')}
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
+          >
+            <div className="bg-emerald-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-emerald-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+              <Clock className="w-6 h-6 md:w-8 md:h-8 text-emerald-400" />
+            </div>
+            <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">Quick Focus</h3>
+            <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Start a Pomodoro session</p>
+          </button>
+
           <button 
             onClick={() => navigate('upload')}
             className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"

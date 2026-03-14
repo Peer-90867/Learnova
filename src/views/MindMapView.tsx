@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ViewName } from '../App';
 import Layout from '../components/Layout';
-import { getCurrentUser, getUploads, getCurrentDocumentId, addUsage, User, MindMap, MindMapNode, setMindMaps, getMindMaps } from '../store';
+import { getCurrentUser, getUploads, getCurrentDocumentId, addUsage, User, MindMap, MindMapNode, setMindMaps, getMindMaps, getCache, setCache } from '../store';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { Loader2, AlertCircle, Share2, Download, RefreshCw, GitBranch, Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
@@ -37,6 +37,14 @@ export default function MindMapView({ navigate, user }: Props) {
       const targetUpload = currentDocId 
         ? uploads.find(u => u && u.id === currentDocId) || uploads[0]
         : uploads[0];
+
+      // Check cache
+      const cached = getCache<MindMap>(`mindmap_${targetUpload.id}`);
+      if (cached) {
+        setMindMap(cached);
+        setLoading(false);
+        return;
+      }
 
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       
@@ -109,6 +117,7 @@ export default function MindMapView({ navigate, user }: Props) {
       };
 
       setMindMap(newMindMap);
+      setCache(`mindmap_${targetUpload.id}`, newMindMap);
       
       // Save to history
       const allMaps = getMindMaps();

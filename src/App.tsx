@@ -22,9 +22,10 @@ import FocusView from './views/FocusView';
 import AnalyticsView from './views/AnalyticsView';
 import PlannerView from './views/PlannerView';
 import GroupsView from './views/GroupsView';
+import VoiceTutorView from './views/VoiceTutorView';
 import { getCurrentUser, isAdmin } from './store';
 
-export type ViewName = 'landing' | 'auth' | 'dashboard' | 'upload' | 'flashcards' | 'notes' | 'pricing' | 'payment_pending' | 'admin_login' | 'admin_panel' | 'profile' | 'study_sets' | 'activity' | 'presentation' | 'chat' | 'todos' | 'quiz' | 'mindmap' | 'focus' | 'analytics' | 'planner' | 'groups';
+export type ViewName = 'landing' | 'auth' | 'dashboard' | 'upload' | 'flashcards' | 'notes' | 'pricing' | 'payment_pending' | 'admin_login' | 'admin_panel' | 'profile' | 'study_sets' | 'activity' | 'presentation' | 'chat' | 'todos' | 'quiz' | 'mindmap' | 'focus' | 'analytics' | 'planner' | 'groups' | 'voice_tutor';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewName>('landing');
@@ -80,6 +81,7 @@ export default function App() {
       case 'analytics': return <AnalyticsView navigate={navigate} user={user} />;
       case 'planner': return <PlannerView navigate={navigate} user={user} />;
       case 'groups': return <GroupsView navigate={navigate} user={user} />;
+      case 'voice_tutor': return <VoiceTutorView navigate={navigate} user={user} />;
       default: return <LandingView navigate={navigate} />;
     }
   };

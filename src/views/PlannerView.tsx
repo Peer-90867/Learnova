@@ -13,6 +13,7 @@ interface Props {
 
 export default function PlannerView({ navigate, user }: Props) {
   const [tasks, setTasks] = useState<PlannedTask[]>([]);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -90,44 +91,51 @@ export default function PlannerView({ navigate, user }: Props) {
   const filteredTasks = tasks.filter(t => t.date === selectedDate);
 
   const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
+  const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
   
   const renderCalendar = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
     const daysInMonth = getDaysInMonth(year, month);
+    const firstDay = getFirstDayOfMonth(year, month);
     
+    const days = [];
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="h-10" />);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+      const isSelected = selectedDate === dateStr;
+      const hasTasks = tasks.some(t => t.date === dateStr);
+      const isToday = new Date().toISOString().split('T')[0] === dateStr;
+
+      days.push(
+        <button
+          key={day}
+          onClick={() => setSelectedDate(dateStr)}
+          className={`h-10 rounded-xl flex flex-col items-center justify-center transition-all relative ${
+            isSelected 
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' 
+              : isToday 
+                ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' 
+                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+          }`}
+        >
+          <span className="text-xs font-bold">{day}</span>
+          {hasTasks && !isSelected && (
+            <div className="absolute bottom-1 w-1 h-1 bg-indigo-400 rounded-full" />
+          )}
+        </button>
+      );
+    }
+
     return (
       <div className="grid grid-cols-7 gap-2 mb-8">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
           <div key={`${d}-${i}`} className="text-center text-[10px] font-bold text-gray-500 uppercase py-2">{d}</div>
         ))}
-        {[...Array(daysInMonth)].map((_, i) => {
-          const day = i + 1;
-          const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-          const isSelected = selectedDate === dateStr;
-          const hasTasks = tasks.some(t => t.date === dateStr);
-          const isToday = new Date().toISOString().split('T')[0] === dateStr;
-
-          return (
-            <button
-              key={day}
-              onClick={() => setSelectedDate(dateStr)}
-              className={`h-10 rounded-xl flex flex-col items-center justify-center transition-all relative ${
-                isSelected 
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' 
-                  : isToday 
-                    ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' 
-                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
-              }`}
-            >
-              <span className="text-xs font-bold">{day}</span>
-              {hasTasks && !isSelected && (
-                <div className="absolute bottom-1 w-1 h-1 bg-indigo-400 rounded-full" />
-              )}
-            </button>
-          );
-        })}
+        {days}
       </div>
     );
   };
@@ -143,11 +151,21 @@ export default function PlannerView({ navigate, user }: Props) {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-white flex items-center">
                 <Calendar className="w-5 h-5 mr-2 text-indigo-400" />
-                Calendar
+                {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </h2>
               <div className="flex gap-1">
-                <button className="p-1 hover:bg-white/5 rounded-lg text-gray-500"><ChevronLeft className="w-4 h-4" /></button>
-                <button className="p-1 hover:bg-white/5 rounded-lg text-gray-500"><ChevronRight className="w-4 h-4" /></button>
+                <button 
+                  onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() - 1)))}
+                  className="p-1 hover:bg-white/5 rounded-lg text-gray-500"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() + 1)))}
+                  className="p-1 hover:bg-white/5 rounded-lg text-gray-500"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
             {renderCalendar()}

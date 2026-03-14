@@ -82,7 +82,9 @@ export default function AuthView({ navigate }: Props) {
           plan: 'free',
           subscriptionStatus: 'none',
           uploadsUsed: 0,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          streak: 1,
+          achievements: []
         };
 
         setUsers([...users, newUser]);

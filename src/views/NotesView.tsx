@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ViewName } from '../App';
 import Layout from '../components/Layout';
-import { getCurrentUser, getUploads, getCurrentDocumentId, addUsage, User } from '../store';
+import { getCurrentUser, getUploads, getCurrentDocumentId, addUsage, User, getCache, setCache } from '../store';
 import { GoogleGenAI, Modality } from "@google/genai";
-import { Loader2, Download, Share2, FileText, AlertCircle, Clipboard, UploadCloud, Volume2, Play, Pause, Headphones } from 'lucide-react';
+import { Loader2, Download, Share2, FileText, AlertCircle, Clipboard, UploadCloud, Volume2, Play, Pause, Headphones, Zap, Mic, Edit3, Save, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
 
@@ -20,7 +20,51 @@ export default function NotesView({ navigate, user }: Props) {
   const [audioLoading, setAudioLoading] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [cramLoading, setCramLoading] = useState(false);
+  const [isCramMode, setIsCramMode] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedNotes, setEditedNotes] = useState('');
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
+
+  const generateCramGuide = async () => {
+    if (!user || cramLoading) return;
+    setCramLoading(true);
+    try {
+      const uploads = getUploads().filter(u => u && u.userId === user?.id);
+      const currentDocId = getCurrentDocumentId();
+      const targetUpload = currentDocId 
+        ? uploads.find(u => u && u.id === currentDocId) || uploads[0]
+        : uploads[0];
+
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const prompt = `GENERATE AN EMERGENCY 10-MINUTE CRAM GUIDE. 
+      Focus ONLY on the absolute most critical concepts, formulas, dates, and definitions that are likely to appear on an exam. 
+      Use extreme brevity. Use bold text for "MUST KNOW" items. 
+      Structure:
+      1. Top 5 "Must-Know" Concepts
+      2. Key Terms & Definitions
+      3. Critical Formulas/Dates (if applicable)
+      4. One-Sentence Summary of the entire topic.
+      
+      Content: ${targetUpload.content || ''}`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.1-pro-preview',
+        contents: [{ parts: [{ text: prompt }] }]
+      });
+
+      setNotes(response.text || '');
+      setEditedNotes(response.text || '');
+      setIsCramMode(true);
+      setDocumentTitle(`${targetUpload.filename} - EMERGENCY CRAM GUIDE`);
+      addUsage('note');
+    } catch (err) {
+      console.error('Cram mode failed', err);
+      alert('Failed to generate cram guide.');
+    } finally {
+      setCramLoading(false);
+    }
+  };
 
   const generateAudioSummary = async () => {
     if (!notes || audioLoading) return;
@@ -121,6 +165,15 @@ export default function NotesView({ navigate, user }: Props) {
           ? uploads.find(u => u && u.id === currentDocId) || uploads[0]
           : uploads[0];
 
+        // Check cache
+        const cached = getCache<string>(`notes_${targetUpload.id}`);
+        if (cached) {
+          setNotes(cached);
+          setEditedNotes(cached);
+          setLoading(false);
+          return;
+        }
+
         setDocumentTitle(`${targetUpload.filename} - Notes`);
         
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -160,6 +213,8 @@ export default function NotesView({ navigate, user }: Props) {
         });
 
         setNotes(response.text || '');
+        setEditedNotes(response.text || '');
+        setCache(`notes_${targetUpload.id}`, response.text || '');
         addUsage('note');
       } catch (err: any) {
         console.error('Failed to generate notes', err);
@@ -190,6 +245,48 @@ export default function NotesView({ navigate, user }: Props) {
             {documentTitle}
           </h1>
           <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto justify-start md:justify-end mt-4 md:mt-0">
+            <button 
+              onClick={() => {
+                if (isEditing) {
+                  setNotes(editedNotes);
+                  setIsEditing(false);
+                } else {
+                  setEditedNotes(notes);
+                  setIsEditing(true);
+                }
+              }}
+              className={`flex items-center px-3 py-2 md:px-4 md:py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shadow-md ${
+                isEditing 
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20' 
+                  : 'bg-[#1A1830] border border-[rgba(124,58,237,0.2)] text-gray-300 hover:text-white hover:bg-indigo-500/10'
+              }`}
+            >
+              {isEditing ? <Save className="w-4 h-4 mr-2" /> : <Edit3 className="w-4 h-4 mr-2" />}
+              {isEditing ? 'Save Changes' : 'Edit Notes'}
+            </button>
+            {isEditing && (
+              <button 
+                onClick={() => setIsEditing(false)}
+                className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-red-600/10 border border-red-500/20 text-red-400 rounded-xl text-xs md:text-sm font-bold hover:bg-red-600/20 transition-all"
+              >
+                <X className="w-4 h-4 mr-2" /> Cancel
+              </button>
+            )}
+            <button 
+              onClick={generateCramGuide}
+              disabled={cramLoading}
+              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs md:text-sm font-bold transition-all shadow-md shadow-orange-500/20 disabled:opacity-50"
+            >
+              {cramLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
+              Cram Mode
+            </button>
+            <button 
+              onClick={() => navigate('voice_tutor')}
+              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs md:text-sm font-bold transition-all shadow-md shadow-purple-500/20"
+            >
+              <Mic className="w-4 h-4 mr-2" />
+              Voice Tutor
+            </button>
             <button 
               onClick={audioUrl ? toggleAudio : generateAudioSummary}
               disabled={audioLoading}
@@ -276,10 +373,19 @@ export default function NotesView({ navigate, user }: Props) {
             </button>
           </div>
         ) : (
-          <div className="flex-1 glass-card rounded-2xl p-8 overflow-y-auto prose prose-invert prose-indigo max-w-none">
-            <div className="markdown-body">
-              <ReactMarkdown>{notes}</ReactMarkdown>
-            </div>
+          <div className="flex-1 glass-card rounded-2xl p-8 overflow-y-auto max-w-none">
+            {isEditing ? (
+              <textarea
+                value={editedNotes}
+                onChange={(e) => setEditedNotes(e.target.value)}
+                className="w-full h-full bg-transparent text-gray-200 font-mono text-sm focus:outline-none resize-none"
+                placeholder="Edit your notes here..."
+              />
+            ) : (
+              <div className="prose prose-invert prose-indigo max-w-none markdown-body">
+                <ReactMarkdown>{notes}</ReactMarkdown>
+              </div>
+            )}
           </div>
         )}
       </div>

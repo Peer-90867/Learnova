@@ -2,14 +2,48 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
+import { WebSocketServer, WebSocket } from "ws";
+import { createServer } from "http";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function startServer() {
   const app = express();
+  const httpServer = createServer(app);
   const PORT = 3000;
 
   app.use(express.json());
+
+  // WebSocket Server for Real-time Collaboration
+  const wss = new WebSocketServer({ server: httpServer });
+  const rooms = new Map<string, Set<WebSocket>>();
+
+  wss.on("connection", (ws, req) => {
+    const url = new URL(req.url || "", `http://${req.headers.host}`);
+    const roomId = url.searchParams.get("roomId") || "default";
+
+    if (!rooms.has(roomId)) {
+      rooms.set(roomId, new Set());
+    }
+    rooms.get(roomId)?.add(ws);
+
+    ws.on("message", (message) => {
+      const data = JSON.parse(message.toString());
+      // Broadcast to everyone in the room except the sender
+      rooms.get(roomId)?.forEach((client) => {
+        if (client !== ws && client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(data));
+        }
+      });
+    });
+
+    ws.on("close", () => {
+      rooms.get(roomId)?.delete(ws);
+      if (rooms.get(roomId)?.size === 0) {
+        rooms.delete(roomId);
+      }
+    });
+  });
 
   // API routes
   app.post("/api/fetch-url", async (req, res) => {
@@ -46,7 +80,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
