@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ViewName } from '../App';
-import { motion } from 'motion/react';
+import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
 import { CheckCircle2, MessageSquare, FileText, PlayCircle } from 'lucide-react';
 
 interface Props {
@@ -12,6 +12,32 @@ export default function LandingView({ navigate }: Props) {
   const [flashcards, setFlashcards] = useState(0);
   const [passRate, setPassRate] = useState(0);
 
+  // Mouse tracking for interactive parallax orbs
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX.set((e.clientX / window.innerWidth) * 2 - 1);
+      mouseY.set((e.clientY / window.innerHeight) * 2 - 1);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [mouseX, mouseY]);
+
+  const springConfig = { stiffness: 50, damping: 20 };
+  const springX = useSpring(mouseX, springConfig);
+  const springY = useSpring(mouseY, springConfig);
+
+  const x1 = useTransform(springX, [-1, 1], [-100, 100]);
+  const y1 = useTransform(springY, [-1, 1], [-100, 100]);
+  
+  const x2 = useTransform(springX, [-1, 1], [100, -100]);
+  const y2 = useTransform(springY, [-1, 1], [100, -100]);
+  
+  const x3 = useTransform(springX, [-1, 1], [-50, 50]);
+  const y3 = useTransform(springY, [-1, 1], [50, -50]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setStudents(prev => (prev < 50000 ? prev + 1000 : 50000));
@@ -22,7 +48,78 @@ export default function LandingView({ navigate }: Props) {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative overflow-hidden bg-[#05050A]">
+      {/* Animated Background Orbs (Galaxy/Nebula Theme) */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        {/* Deep Space Base */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/10 via-[#0F0E17]/80 to-[#0F0E17]"></div>
+
+        {/* Nebula Cloud 1 - Purple/Fuchsia */}
+        <motion.div
+          style={{ x: x1, y: y1 }}
+          className="absolute top-[-10%] left-[10%] w-[40rem] h-[40rem] mix-blend-screen opacity-60"
+        >
+          <motion.div
+            animate={{
+              scale: [1, 1.2, 0.9, 1],
+              rotate: [0, 90, 180, 360],
+              borderRadius: ["40% 60% 70% 30%", "60% 40% 30% 70%", "50% 50% 60% 40%", "40% 60% 70% 30%"],
+            }}
+            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            className="w-full h-full bg-gradient-to-br from-fuchsia-600/40 to-purple-800/40 blur-[100px]"
+          />
+        </motion.div>
+
+        {/* Nebula Cloud 2 - Cyan/Blue */}
+        <motion.div
+          style={{ x: x2, y: y2 }}
+          className="absolute top-[30%] right-[-5%] w-[35rem] h-[35rem] mix-blend-screen opacity-50"
+        >
+          <motion.div
+            animate={{
+              scale: [1, 1.3, 0.8, 1],
+              rotate: [360, 180, 90, 0],
+              borderRadius: ["60% 40% 30% 70%", "40% 60% 70% 30%", "50% 50% 40% 60%", "60% 40% 30% 70%"],
+            }}
+            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            className="w-full h-full bg-gradient-to-bl from-cyan-500/30 to-blue-700/30 blur-[100px]"
+          />
+        </motion.div>
+
+        {/* Nebula Cloud 3 - Rose/Orange */}
+        <motion.div
+          style={{ x: x3, y: y3 }}
+          className="absolute bottom-[-10%] left-[20%] w-[45rem] h-[45rem] mix-blend-screen opacity-40"
+        >
+          <motion.div
+            animate={{
+              scale: [1, 1.1, 1.2, 1],
+              rotate: [0, -90, -180, -360],
+              borderRadius: ["50% 50% 60% 40%", "60% 40% 30% 70%", "40% 60% 70% 30%", "50% 50% 60% 40%"],
+            }}
+            transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
+            className="w-full h-full bg-gradient-to-tr from-rose-600/30 to-orange-600/20 blur-[120px]"
+          />
+        </motion.div>
+
+        {/* Twinkling Stars */}
+        <motion.div
+          animate={{ opacity: [0.2, 0.8, 0.2], scale: [1, 1.5, 1] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[20%] left-[15%] w-2 h-2 bg-white rounded-full blur-[1px]"
+        />
+        <motion.div
+          animate={{ opacity: [0.1, 0.6, 0.1], scale: [1, 1.2, 1] }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          className="absolute top-[60%] right-[25%] w-3 h-3 bg-blue-200 rounded-full blur-[2px]"
+        />
+        <motion.div
+          animate={{ opacity: [0.3, 1, 0.3], scale: [1, 1.4, 1] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          className="absolute bottom-[30%] left-[40%] w-1.5 h-1.5 bg-purple-200 rounded-full blur-[1px]"
+        />
+      </div>
+
       {/* Navbar */}
       <nav className="sticky top-0 z-50 backdrop-blur-md bg-opacity-80 bg-[#0F0E17] border-b border-[rgba(124,58,237,0.2)] px-6 py-4 flex justify-between items-center">
         <div className="text-xl font-bold text-gradient">🧪 CramLab</div>
@@ -38,7 +135,7 @@ export default function LandingView({ navigate }: Props) {
       </nav>
 
       {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center text-center px-4 py-20">
+      <main className="flex-1 flex flex-col items-center justify-center text-center px-4 py-20 relative z-10">
         <motion.h1 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

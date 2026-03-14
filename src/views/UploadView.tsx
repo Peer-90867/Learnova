@@ -3,7 +3,7 @@ import { ViewName } from '../App';
 import Layout from '../components/Layout';
 import { getCurrentUser, getUploads, setUploads, setCurrentUser, Upload, addUsage, User, setCurrentDocumentId } from '../store';
 import { motion, AnimatePresence } from 'motion/react';
-import { FileUp, Link as LinkIcon, Type, CheckCircle2, Loader2, UploadCloud, Layers, FileText, Lock, Sparkles, X } from 'lucide-react';
+import { FileUp, Link as LinkIcon, Type, CheckCircle2, Loader2, UploadCloud, Layers, FileText, Lock, Sparkles, X, Eye, Search } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 
 interface Props {
@@ -30,6 +30,11 @@ export default function UploadView({ navigate, user }: Props) {
   const [fetchSuccess, setFetchSuccess] = useState('');
   const [text, setText] = useState('');
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatusText, setUploadStatusText] = useState('');
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [previewTextContent, setPreviewTextContent] = useState<string>('');
+  const [previewSearchQuery, setPreviewSearchQuery] = useState('');
 
   const [toggles, setToggles] = useState({
     flashcards: true,
@@ -38,6 +43,7 @@ export default function UploadView({ navigate, user }: Props) {
   });
 
   const isReady = (activeTab === 'file' && selectedFiles.length > 0) || (activeTab === 'url' && !!urlContent) || (activeTab === 'text' && !!text);
+  const showGenerationOptions = isReady;
 
   if (!user) return null;
 
@@ -115,6 +121,39 @@ export default function UploadView({ navigate, user }: Props) {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handlePreview = (file: File) => {
+    setPreviewFile(file);
+    setPreviewSearchQuery('');
+    if (file.type === 'text/plain') {
+      const reader = new FileReader();
+      reader.onload = (e) => setPreviewTextContent(e.target?.result as string || '');
+      reader.readAsText(file);
+    } else {
+      setPreviewTextContent('');
+    }
+  };
+
+  const escapeRegExp = (string: string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  };
+
+  const renderHighlightedText = (text: string, query: string) => {
+    if (!query) return text;
+    const escapedQuery = escapeRegExp(query);
+    const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
+    return (
+      <>
+        {parts.map((part, i) => 
+          part.toLowerCase() === query.toLowerCase() ? (
+            <mark key={i} className="bg-indigo-500/50 text-white rounded px-1">{part}</mark>
+          ) : (
+            part
+          )
+        )}
+      </>
+    );
+  };
+
   const handleFetchUrl = async () => {
     if (!url) return;
     setLoading(true);
@@ -156,6 +195,8 @@ export default function UploadView({ navigate, user }: Props) {
 
     setLoading(true);
     setShowLoadingOverlay(true);
+    setUploadProgress(0);
+    setUploadStatusText('Initializing...');
     setError('');
 
     try {
@@ -204,23 +245,45 @@ export default function UploadView({ navigate, user }: Props) {
       const newUploadObjects: Upload[] = [];
 
       if (activeTab === 'file') {
-        for (const file of selectedFiles) {
+        const totalFiles = selectedFiles.length;
+        for (let i = 0; i < totalFiles; i++) {
+          const file = selectedFiles[i];
+          setUploadStatusText(`Reading ${file.name}...`);
+          
           const fileContent = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
+            reader.onprogress = (e) => {
+              if (e.lengthComputable) {
+                const fileProgress = e.loaded / e.total;
+                const overallProgress = Math.round(((i + (fileProgress * 0.5)) / totalFiles) * 100);
+                setUploadProgress(overallProgress);
+              }
+            };
             reader.onload = (e) => resolve(e.target?.result as string || '');
             reader.onerror = (e) => reject(e);
             reader.readAsDataURL(file);
           });
+          
+          setUploadStatusText(`Processing ${file.name}...`);
           const obj = await processContent(fileContent, file.name, 'file');
+          
+          setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
+          
           newUploadObjects.push(obj);
           newUploadsCount++;
         }
       } else if (activeTab === 'text') {
+        setUploadStatusText('Processing text...');
+        setUploadProgress(50);
         const obj = await processContent(text, 'Pasted Text', 'text');
+        setUploadProgress(100);
         newUploadObjects.push(obj);
         newUploadsCount++;
       } else if (activeTab === 'url') {
+        setUploadStatusText('Processing URL...');
+        setUploadProgress(50);
         const obj = await processContent(urlContent, url, 'url');
+        setUploadProgress(100);
         newUploadObjects.push(obj);
         newUploadsCount++;
       }
@@ -253,11 +316,15 @@ export default function UploadView({ navigate, user }: Props) {
       } else {
         navigate('flashcards');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing upload:', error);
       setLoading(false);
       setShowLoadingOverlay(false);
-      setError('Failed to process the input. Please try again.');
+      if (error?.message?.includes('429') || error?.status === 429 || error?.message?.includes('exceeded your current quota')) {
+        setError('You have exceeded your Gemini API quota. Please check your plan and billing details at https://ai.google.dev/gemini-api/docs/rate-limits.');
+      } else {
+        setError('Failed to process the input. Please try again.');
+      }
     }
   };
 
@@ -355,12 +422,22 @@ export default function UploadView({ navigate, user }: Props) {
                           {file.name.split('.').pop()}
                         </span>
                       </div>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
-                        className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handlePreview(file); }}
+                          className="p-1.5 text-gray-500 hover:text-indigo-400 hover:bg-indigo-400/10 rounded-lg transition-colors"
+                          title="Preview File"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
+                          className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                          title="Remove File"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                   <div className="pt-2 text-center">
@@ -427,8 +504,12 @@ export default function UploadView({ navigate, user }: Props) {
         </div>
 
         {/* Generation Options */}
-        {isReady && (
-          <div className="glass-card rounded-2xl p-6 mb-8">
+        {showGenerationOptions && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card rounded-2xl p-6 mb-8"
+          >
             <h3 className="text-lg font-bold mb-4">Generation Options</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -483,7 +564,7 @@ export default function UploadView({ navigate, user }: Props) {
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
 
         <button 
@@ -529,12 +610,81 @@ export default function UploadView({ navigate, user }: Props) {
                 <motion.div 
                   className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full"
                   initial={{ width: "0%" }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: 1.5, ease: "easeInOut" }}
+                  animate={{ width: `${uploadProgress}%` }}
+                  transition={{ duration: 0.3 }}
                 />
+              </div>
+              <div className="flex justify-between w-full text-xs text-gray-400 mt-1">
+                <span className="truncate pr-2">{uploadStatusText}</span>
+                <span>{uploadProgress}%</span>
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Preview Modal */}
+      <AnimatePresence>
+        {previewFile && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#0F0E17] border border-[rgba(124,58,237,0.3)] rounded-3xl p-6 w-full max-w-4xl shadow-2xl flex flex-col h-[80vh]"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-white flex items-center truncate pr-4">
+                  <Eye className="w-5 h-5 mr-2 text-indigo-400" />
+                  Preview: {previewFile.name}
+                </h3>
+                {previewFile.type === 'text/plain' && (
+                  <div className="relative flex-1 max-w-md mx-4">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input 
+                      type="text" 
+                      placeholder="Search in document..." 
+                      value={previewSearchQuery}
+                      onChange={(e) => setPreviewSearchQuery(e.target.value)}
+                      className="w-full bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                    />
+                  </div>
+                )}
+                <button 
+                  onClick={() => { setPreviewFile(null); setPreviewSearchQuery(''); }}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-hidden bg-[#1A1830] rounded-xl border border-[rgba(124,58,237,0.2)] relative flex items-center justify-center">
+                {previewFile.type === 'application/pdf' ? (
+                  <iframe 
+                    src={URL.createObjectURL(previewFile)} 
+                    className="w-full h-full"
+                    title="PDF Preview"
+                  />
+                ) : previewFile.type.startsWith('image/') ? (
+                  <img 
+                    src={URL.createObjectURL(previewFile)} 
+                    alt="Preview" 
+                    className="max-w-full max-h-full object-contain p-4"
+                  />
+                ) : previewFile.type === 'text/plain' ? (
+                  <div className="w-full h-full overflow-auto p-6 text-gray-300 text-sm font-mono whitespace-pre-wrap text-left custom-scrollbar">
+                    {previewTextContent ? renderHighlightedText(previewTextContent, previewSearchQuery) : 'Loading...'}
+                  </div>
+                ) : (
+                  <div className="text-center p-8">
+                    <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-400">Preview is not available for this file type.</p>
+                    <p className="text-sm text-gray-500 mt-2">The file will still be processed correctly.</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </Layout>

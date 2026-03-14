@@ -3,7 +3,7 @@ import { ViewName } from '../App';
 import { isAdmin, setAdmin, getUsers, setUsers, getSubscriptions, setSubscriptions, User, Subscription, getUsage, getUploads } from '../store';
 import { motion } from 'motion/react';
 import { Users, CreditCard, LogOut, CheckCircle2, XCircle, Search, Trash2, ShieldAlert, BarChart3, TrendingUp, FileText, Layers, MessageSquare } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell as PieCell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell as PieCell, LineChart, Line, Legend, AreaChart, Area } from 'recharts';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -310,37 +310,91 @@ export default function AdminPanelView({ navigate }: Props) {
           )}
 
           {activeTab === 'stats' && (
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
               <h2 className="text-2xl font-bold mb-8 flex items-center">
                 <BarChart3 className="w-6 h-6 mr-3 text-indigo-400" /> Platform Usage Analytics
               </h2>
 
               {/* Global Stats Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                <div className="bg-[#1A1830] p-6 rounded-2xl border border-[rgba(124,58,237,0.1)]">
-                  <div className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Total Users</div>
-                  <div className="text-3xl font-bold text-white">{users.length}</div>
-                </div>
-                <div className="bg-[#1A1830] p-6 rounded-2xl border border-[rgba(124,58,237,0.1)]">
-                  <div className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Total Uploads</div>
-                  <div className="text-3xl font-bold text-white">{getUploads().length}</div>
-                </div>
-                <div className="bg-[#1A1830] p-6 rounded-2xl border border-[rgba(124,58,237,0.1)]">
-                  <div className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Total Interactions</div>
-                  <div className="text-3xl font-bold text-white">{getUsage().length}</div>
-                </div>
-                <div className="bg-[#1A1830] p-6 rounded-2xl border border-[rgba(124,58,237,0.1)]">
-                  <div className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Revenue (Est.)</div>
-                  <div className="text-3xl font-bold text-emerald-400">
-                    ${subscriptions.filter(s => s.status === 'approved').reduce((acc, s) => acc + s.amount, 0)}
-                  </div>
-                </div>
+                {[
+                  { label: 'Total Users', value: users.length, icon: Users, color: 'text-blue-400' },
+                  { label: 'Total Uploads', value: getUploads().length, icon: FileText, color: 'text-purple-400' },
+                  { label: 'Total Interactions', value: getUsage().length, icon: MessageSquare, color: 'text-indigo-400' },
+                  { label: 'Avg. Interactions', value: users.length > 0 ? (getUsage().length / users.length).toFixed(1) : 0, icon: TrendingUp, color: 'text-emerald-400' },
+                ].map((stat, i) => (
+                  <motion.div 
+                    key={stat.label}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    whileHover={{ y: -5, scale: 1.02 }}
+                    className="bg-[#1A1830] p-6 rounded-2xl border border-[rgba(124,58,237,0.1)] hover:border-indigo-500/30 transition-all cursor-default group"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="text-gray-400 text-xs font-bold uppercase tracking-wider">{stat.label}</div>
+                      <stat.icon className={`w-5 h-5 ${stat.color} opacity-50 group-hover:opacity-100 transition-opacity`} />
+                    </div>
+                    <div className={`text-3xl font-bold ${stat.color}`}>{stat.value}</div>
+                  </motion.div>
+                ))}
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+                {/* User Growth Chart */}
+                <div className="bg-[#1A1830] p-6 rounded-2xl border border-[rgba(124,58,237,0.1)]">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-bold flex items-center">
+                      <TrendingUp className="w-5 h-5 mr-2 text-emerald-400" /> User Growth
+                    </h3>
+                    <div className="text-xs text-gray-500">Last 7 days</div>
+                  </div>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={(() => {
+                        const dates: Record<string, number> = {};
+                        // Initialize last 7 days
+                        for (let i = 6; i >= 0; i--) {
+                          const d = new Date();
+                          d.setDate(d.getDate() - i);
+                          dates[d.toLocaleDateString()] = 0;
+                        }
+                        // Fill with real data
+                        users.forEach(u => {
+                          const date = new Date(u.createdAt).toLocaleDateString();
+                          if (dates[date] !== undefined) dates[date]++;
+                        });
+                        // Cumulative
+                        let total = users.length - Object.values(dates).reduce((a, b) => a + b, 0);
+                        return Object.entries(dates).map(([name, count]) => {
+                          total += count;
+                          return { name, count: total };
+                        });
+                      })()}>
+                        <defs>
+                          <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                        <XAxis dataKey="name" stroke="#9CA3AF" fontSize={10} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#9CA3AF" fontSize={10} tickLine={false} axisLine={false} />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#1A1830', border: '1px solid rgba(124,58,237,0.2)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                          itemStyle={{ color: '#10b981' }}
+                        />
+                        <Area type="monotone" dataKey="count" stroke="#10b981" fillOpacity={1} fill="url(#colorCount)" strokeWidth={3} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
                 {/* Feature Usage Chart */}
                 <div className="bg-[#1A1830] p-6 rounded-2xl border border-[rgba(124,58,237,0.1)]">
-                  <h3 className="text-lg font-bold mb-6">Feature Popularity</h3>
+                  <h3 className="text-lg font-bold mb-6 flex items-center">
+                    <Layers className="w-5 h-5 mr-2 text-indigo-400" /> Feature Popularity
+                  </h3>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={[
@@ -348,14 +402,16 @@ export default function AdminPanelView({ navigate }: Props) {
                         { name: 'Notes', count: getUsage().filter(u => u.type === 'note').length },
                         { name: 'Chats', count: getUsage().filter(u => u.type === 'chat').length },
                         { name: 'Docs', count: getUsage().filter(u => u.type === 'doc').length },
+                        { name: 'Slides', count: getUsage().filter(u => u.type === 'presentation').length },
                       ]}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                        <XAxis dataKey="name" stroke="#9CA3AF" />
-                        <YAxis stroke="#9CA3AF" />
+                        <XAxis dataKey="name" stroke="#9CA3AF" fontSize={10} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#9CA3AF" fontSize={10} tickLine={false} axisLine={false} />
                         <Tooltip 
-                          contentStyle={{ backgroundColor: '#1A1830', border: '1px solid rgba(124,58,237,0.2)', borderRadius: '8px' }}
+                          cursor={{ fill: 'rgba(99, 102, 241, 0.1)' }}
+                          contentStyle={{ backgroundColor: '#1A1830', border: '1px solid rgba(124,58,237,0.2)', borderRadius: '12px' }}
                         />
-                        <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={40} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -363,7 +419,9 @@ export default function AdminPanelView({ navigate }: Props) {
 
                 {/* Plan Distribution */}
                 <div className="bg-[#1A1830] p-6 rounded-2xl border border-[rgba(124,58,237,0.1)]">
-                  <h3 className="text-lg font-bold mb-6">Plan Distribution</h3>
+                  <h3 className="text-lg font-bold mb-6 flex items-center">
+                    <CreditCard className="w-5 h-5 mr-2 text-amber-400" /> Plan Distribution
+                  </h3>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -377,7 +435,7 @@ export default function AdminPanelView({ navigate }: Props) {
                           cy="50%"
                           innerRadius={60}
                           outerRadius={80}
-                          paddingAngle={5}
+                          paddingAngle={8}
                           dataKey="value"
                         >
                           <PieCell fill="#94a3b8" />
@@ -385,15 +443,84 @@ export default function AdminPanelView({ navigate }: Props) {
                           <PieCell fill="#6366f1" />
                         </Pie>
                         <Tooltip 
-                          contentStyle={{ backgroundColor: '#1A1830', border: '1px solid rgba(124,58,237,0.2)', borderRadius: '8px' }}
+                          contentStyle={{ backgroundColor: '#1A1830', border: '1px solid rgba(124,58,237,0.2)', borderRadius: '12px' }}
                         />
+                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="flex justify-center gap-6 mt-4 text-xs font-medium">
-                    <div className="flex items-center"><div className="w-3 h-3 bg-gray-400 rounded-full mr-2"></div> Free</div>
-                    <div className="flex items-center"><div className="w-3 h-3 bg-amber-500 rounded-full mr-2"></div> Pro</div>
-                    <div className="flex items-center"><div className="w-3 h-3 bg-indigo-500 rounded-full mr-2"></div> Team</div>
+                </div>
+
+                {/* Top Active Users */}
+                <div className="bg-[#1A1830] p-6 rounded-2xl border border-[rgba(124,58,237,0.1)]">
+                  <h3 className="text-lg font-bold mb-6 flex items-center">
+                    <Users className="w-5 h-5 mr-2 text-blue-400" /> Top Active Users
+                  </h3>
+                  <div className="space-y-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    {(() => {
+                      const userActivity: Record<number, number> = {};
+                      getUsage().forEach(u => {
+                        userActivity[u.userId] = (userActivity[u.userId] || 0) + 1;
+                      });
+                      return Object.entries(userActivity)
+                        .sort(([, a], [, b]) => b - a)
+                        .slice(0, 5)
+                        .map(([userId, count]) => {
+                          const user = users.find(u => u.id === Number(userId));
+                          return (
+                            <div key={userId} className="flex items-center justify-between p-3 bg-[#0F0E17] rounded-xl border border-[rgba(124,58,237,0.05)]">
+                              <div className="flex items-center">
+                                <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-xs mr-3">
+                                  {user?.name.charAt(0) || '?'}
+                                </div>
+                                <div>
+                                  <div className="text-sm font-medium text-white">{user?.name || 'Unknown'}</div>
+                                  <div className="text-xs text-gray-500">{user?.email || 'N/A'}</div>
+                                </div>
+                              </div>
+                              <div className="text-xs font-bold text-indigo-400 bg-indigo-400/10 px-2 py-1 rounded">
+                                {count} actions
+                              </div>
+                            </div>
+                          );
+                        });
+                    })()}
+                  </div>
+                </div>
+
+                {/* Recent Activity Feed */}
+                <div className="bg-[#1A1830] p-6 rounded-2xl border border-[rgba(124,58,237,0.1)] col-span-1 lg:col-span-2">
+                  <h3 className="text-lg font-bold mb-6 flex items-center">
+                    <TrendingUp className="w-5 h-5 mr-2 text-blue-400" /> Recent Activity Feed
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                    {getUsage().slice(-20).reverse().map((u, i) => {
+                      const user = users.find(usr => usr.id === u.userId);
+                      return (
+                        <div key={i} className="flex items-center justify-between p-3 bg-[#0F0E17] rounded-xl border border-[rgba(124,58,237,0.05)]">
+                          <div className="flex items-center">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
+                              u.type === 'flashcard' ? 'bg-indigo-500/20 text-indigo-400' :
+                              u.type === 'note' ? 'bg-emerald-500/20 text-emerald-400' :
+                              u.type === 'chat' ? 'bg-blue-500/20 text-blue-400' :
+                              'bg-purple-500/20 text-purple-400'
+                            }`}>
+                              {u.type === 'flashcard' ? <Layers className="w-4 h-4" /> :
+                               u.type === 'note' ? <FileText className="w-4 h-4" /> :
+                               u.type === 'chat' ? <MessageSquare className="w-4 h-4" /> :
+                               <TrendingUp className="w-4 h-4" />}
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-white">{user?.name || 'Unknown User'}</div>
+                              <div className="text-xs text-gray-500 capitalize">{u.type} generated</div>
+                            </div>
+                          </div>
+                          <div className="text-[10px] text-gray-600">
+                            {new Date(u.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

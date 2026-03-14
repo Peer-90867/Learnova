@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import { ViewName } from '../App';
 import { getCurrentUser, setCurrentUser } from '../store';
-import { BarChart2, UploadCloud, Layers, FileText, MessageSquare, Gem, LogOut, Menu, X, User, Presentation } from 'lucide-react';
+import { BarChart2, UploadCloud, Layers, FileText, MessageSquare, Gem, LogOut, Menu, X, User, Presentation, CheckCircle2, Target, Brain, Clock, Calendar, Users } from 'lucide-react';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -26,11 +26,18 @@ export default function Layout({ navigate, children, activeView, hideSidebar = f
 
   const navItems = [
     { name: 'Overview', icon: BarChart2, view: 'dashboard' as ViewName, section: 'main' },
-    { name: 'Activity', icon: MessageSquare, view: 'activity' as ViewName, section: 'main' },
     { name: 'Upload Material', icon: UploadCloud, view: 'upload' as ViewName, section: 'main' },
     { name: 'My Flashcards', icon: Layers, view: 'flashcards' as ViewName, section: 'main' },
     { name: 'My Notes', icon: FileText, view: 'notes' as ViewName, section: 'main' },
     { name: 'Presentations', icon: Presentation, view: 'presentation' as ViewName, section: 'main' },
+    { name: 'AI Chat', icon: MessageSquare, view: 'chat' as ViewName, section: 'main' },
+    { name: 'Mind Maps', icon: Brain, view: 'mindmap' as ViewName, section: 'main' },
+    { name: 'Mock Exams', icon: Target, view: 'quiz' as ViewName, section: 'main' },
+    { name: 'Focus Timer', icon: Clock, view: 'focus' as ViewName, section: 'main' },
+    { name: 'Study Planner', icon: Calendar, view: 'planner' as ViewName, section: 'main' },
+    { name: 'Study Hub', icon: Users, view: 'groups' as ViewName, section: 'main' },
+    { name: 'Analytics', icon: BarChart2, view: 'analytics' as ViewName, section: 'main' },
+    { name: 'Study Tasks', icon: CheckCircle2, view: 'todos' as ViewName, section: 'main' },
     { name: 'Profile', icon: User, view: 'profile' as ViewName, section: 'account', activeClass: 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30', inactiveClass: 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-surface)] hover:text-[var(--color-text)]' },
     { name: 'Upgrade Plan', icon: Gem, view: 'pricing' as ViewName, section: 'account', activeClass: 'bg-amber-500/20 text-amber-400 border border-amber-500/30', inactiveClass: 'text-amber-500 hover:bg-amber-500/10' },
   ];

@@ -3,7 +3,7 @@ import { ViewName } from '../App';
 import Layout from '../components/Layout';
 import { getCurrentUser, getUploads, Upload, setCurrentDocumentId, getUsage, User } from '../store';
 import { motion } from 'motion/react';
-import { FileText, Layers, Clock, Target, UploadCloud, MessageSquare, Lock, TrendingUp, TrendingDown, Presentation } from 'lucide-react';
+import { FileText, Layers, Clock, Target, UploadCloud, MessageSquare, Lock, TrendingUp, TrendingDown, Presentation, CheckCircle2, Search } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 
 interface Props {
@@ -15,6 +15,7 @@ export default function DashboardView({ navigate, user }: Props) {
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [greeting, setGreeting] = useState('');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -186,67 +187,138 @@ export default function DashboardView({ navigate, user }: Props) {
 
         {/* Quick Actions */}
         <h2 className="text-xl font-bold mb-6">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 md:gap-6 mb-12">
           <button 
             onClick={() => navigate('upload')}
-            className="glass-card p-8 rounded-2xl hover-glow text-left flex flex-col items-start group"
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
           >
-            <div className="bg-indigo-500/20 p-4 rounded-xl mb-4 group-hover:bg-indigo-500/30 transition-colors">
-              <UploadCloud className="w-8 h-8 text-indigo-400" />
+            <div className="bg-indigo-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-indigo-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+              <UploadCloud className="w-6 h-6 md:w-8 md:h-8 text-indigo-400" />
             </div>
-            <h3 className="text-lg font-bold mb-2">Upload Document</h3>
-            <p className="text-gray-400 text-sm">PDF, video, or paste text</p>
+            <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">Upload Media</h3>
+            <p className="text-gray-400 text-xs md:text-sm line-clamp-2">PDF, video, or paste text</p>
           </button>
           
           <button 
             onClick={() => navigate('notes')}
-            className="glass-card p-8 rounded-2xl hover-glow text-left flex flex-col items-start group"
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
           >
-            <div className="bg-blue-500/20 p-4 rounded-xl mb-4 group-hover:bg-blue-500/30 transition-colors">
-              <FileText className="w-8 h-8 text-blue-400" />
+            <div className="bg-blue-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-blue-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+              <FileText className="w-6 h-6 md:w-8 md:h-8 text-blue-400" />
             </div>
-            <h3 className="text-lg font-bold mb-2">Smart Notes</h3>
-            <p className="text-gray-400 text-sm">Review generated notes</p>
+            <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">My Notes</h3>
+            <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Review generated notes</p>
           </button>
 
           <button 
             onClick={() => navigate('flashcards')}
-            className="glass-card p-8 rounded-2xl hover-glow text-left flex flex-col items-start group"
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
           >
-            <div className="bg-purple-500/20 p-4 rounded-xl mb-4 group-hover:bg-purple-500/30 transition-colors">
-              <Layers className="w-8 h-8 text-purple-400" />
+            <div className="bg-purple-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-purple-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+              <Layers className="w-6 h-6 md:w-8 md:h-8 text-purple-400" />
             </div>
-            <h3 className="text-lg font-bold mb-2">Practice Flashcards</h3>
-            <p className="text-gray-400 text-sm">Continue your last deck</p>
+            <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">My Flashcards</h3>
+            <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Continue your last deck</p>
           </button>
 
           <button 
             onClick={() => navigate('presentation')}
-            className="glass-card p-8 rounded-2xl hover-glow text-left flex flex-col items-start group"
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
           >
-            <div className="bg-emerald-500/20 p-4 rounded-xl mb-4 group-hover:bg-emerald-500/30 transition-colors">
-              <Presentation className="w-8 h-8 text-emerald-400" />
+            <div className="bg-emerald-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-emerald-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+              <Presentation className="w-6 h-6 md:w-8 md:h-8 text-emerald-400" />
             </div>
-            <h3 className="text-lg font-bold mb-2">AI Presentation</h3>
-            <p className="text-gray-400 text-sm">Create slides from docs</p>
+            <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">Presentation</h3>
+            <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Create slides from docs</p>
+          </button>
+
+          <button 
+            onClick={() => {
+              const lastUpload = uploads[0];
+              if (lastUpload) {
+                setCurrentDocumentId(lastUpload.id);
+                navigate('chat');
+              } else {
+                navigate('upload');
+              }
+            }}
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
+          >
+            <div className="bg-cyan-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-cyan-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+              <MessageSquare className="w-6 h-6 md:w-8 md:h-8 text-cyan-400" />
+            </div>
+            <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">AI Chat</h3>
+            <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Ask questions about docs</p>
+          </button>
+
+          <button 
+            onClick={() => navigate('quiz')}
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
+          >
+            <div className="bg-rose-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-rose-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+              <Target className="w-6 h-6 md:w-8 md:h-8 text-rose-400" />
+            </div>
+            <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">Mock Exams</h3>
+            <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Test your knowledge</p>
+          </button>
+
+          <button 
+            onClick={() => navigate('todos')}
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
+          >
+            <div className="bg-amber-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-amber-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+              <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8 text-amber-400" />
+            </div>
+            <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">Study Tasks</h3>
+            <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Set goals & deadlines</p>
           </button>
         </div>
 
         {/* Recent Uploads */}
-        <h2 className="text-xl font-bold mb-6">Recent Uploads {selectedDay && `for ${selectedDay}`}</h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <h2 className="text-xl font-bold">
+            {searchQuery ? 'Search Results' : `Recent Uploads ${selectedDay ? `for ${selectedDay}` : ''}`}
+          </h2>
+          <div className="relative w-full sm:w-64">
+            <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Search documents..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+          </div>
+        </div>
         <div className="glass-card rounded-2xl overflow-hidden">
           {(() => {
-            const filtered = selectedDay ? uploads.filter(u => new Date(u.date).toLocaleDateString('en-US', { weekday: 'short' }) === selectedDay) : uploads;
+            let filtered = uploads;
+            
+            if (selectedDay && !searchQuery) {
+              filtered = filtered.filter(u => new Date(u.date).toLocaleDateString('en-US', { weekday: 'short' }) === selectedDay);
+            }
+            
+            if (searchQuery) {
+              const query = searchQuery.toLowerCase();
+              filtered = filtered.filter(u => 
+                u.filename.toLowerCase().includes(query) || 
+                (u.content && u.content.toLowerCase().includes(query))
+              );
+            }
+
             if (filtered.length === 0) {
               return (
                 <div className="p-8 text-center text-gray-400">
-                  No documents uploaded {selectedDay ? `on ${selectedDay}` : 'yet'}.
+                  {searchQuery ? 'No documents found matching your search.' : `No documents uploaded ${selectedDay ? `on ${selectedDay}` : 'yet'}.`}
                 </div>
               );
             }
+            
+            const displayUploads = searchQuery ? filtered : filtered.slice(0, 5);
+
             return (
               <div className="divide-y divide-[rgba(124,58,237,0.2)]">
-                {filtered.slice(0, 5).map(upload => (
+                {displayUploads.map(upload => (
                   <div key={upload.id} className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between hover:bg-[#211F35] transition-colors gap-4">
                     <div className="flex items-center w-full sm:w-auto min-w-0">
                       <div className="bg-indigo-500/20 p-3 rounded-lg mr-4 flex-shrink-0">
@@ -288,6 +360,15 @@ export default function DashboardView({ navigate, user }: Props) {
                         className="flex-1 sm:flex-none text-sm bg-[#211F35] hover:bg-emerald-600 border border-[rgba(124,58,237,0.2)] px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
                       >
                         Presentation
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setCurrentDocumentId(upload.id);
+                          navigate('chat');
+                        }} 
+                        className="flex-1 sm:flex-none text-sm bg-[#211F35] hover:bg-blue-600 border border-[rgba(124,58,237,0.2)] px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+                      >
+                        Chat
                       </button>
                     </div>
                   </div>

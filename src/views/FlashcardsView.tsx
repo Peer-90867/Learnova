@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ViewName } from '../App';
 import Layout from '../components/Layout';
 import { getCurrentUser, getUploads, getCurrentDocumentId, addUsage, Flashcard, Deck, getDecks, setDecks, User } from '../store';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, Type } from '@google/genai';
-import { ChevronLeft, ChevronRight, RefreshCw, Grid, Play, Loader2, AlertCircle, Share2, BookOpen, UploadCloud } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RefreshCw, Grid, Play, Loader2, AlertCircle, Share2, BookOpen, UploadCloud, Filter } from 'lucide-react';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -20,6 +20,8 @@ export default function FlashcardsView({ navigate, user }: Props) {
   const [documentTitle, setDocumentTitle] = useState('AI Flashcards');
   const [viewMode, setViewMode] = useState<'study' | 'grid'>('study');
   const [filterMode, setFilterMode] = useState<'all' | 'hard'>('all');
+  const [uiDifficultyFilter, setUiDifficultyFilter] = useState<string[]>(['easy', 'medium', 'hard']);
+  const [sortBy, setSortBy] = useState<'difficulty' | 'front' | 'back' | 'none'>('none');
   const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
   const [difficultyFilter, setDifficultyFilter] = useState<('easy' | 'medium' | 'hard')[]>(['easy', 'medium', 'hard']);
   const [cardCount, setCardCount] = useState<number>(10);
@@ -31,15 +33,25 @@ export default function FlashcardsView({ navigate, user }: Props) {
     setSummarizing(true);
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const deckContent = cards.map(c => `Q: ${c.front} A: ${c.back}`).join('\n\n');
+      let deckContent = cards.map(c => `Q: ${c.front} A: ${c.back}`).join('\n\n');
+      
+      // Truncate if deck is massive
+      if (deckContent.length > 30000) {
+        deckContent = deckContent.substring(0, 30000) + "... [content truncated]";
+      }
+
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.1-pro-preview',
         contents: `Summarize the following flashcard deck in a brief paragraph:\n\n${deckContent}`
       });
       setSummary(response.text || 'No summary available.');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to summarize deck', err);
-      setSummary('Failed to generate summary.');
+      if (err?.message?.includes('429') || err?.status === 429 || err?.message?.includes('exceeded your current quota')) {
+        setSummary('You have exceeded your Gemini API quota. Please check your plan and billing details at https://ai.google.dev/gemini-api/docs/rate-limits.');
+      } else {
+        setSummary('Failed to generate summary.');
+      }
     } finally {
       setSummarizing(false);
     }
@@ -69,6 +81,11 @@ export default function FlashcardsView({ navigate, user }: Props) {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       
       let promptContent = targetUpload.content || '';
+      // Truncate content to avoid payload limits if it's extremely large
+      if (promptContent.length > 30000) {
+        promptContent = promptContent.substring(0, 30000) + "... [content truncated]";
+      }
+
       let contents: any = `Generate ${cardCount} flashcards with difficulty levels: ${difficultyFilter.join(', ')} based on the following content:\n\n${promptContent}`;
       
       if (promptContent.startsWith('data:')) {
@@ -93,7 +110,7 @@ export default function FlashcardsView({ navigate, user }: Props) {
       }
       
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.1-pro-preview',
         contents: contents,
         config: {
           responseMimeType: 'application/json',
@@ -115,9 +132,13 @@ export default function FlashcardsView({ navigate, user }: Props) {
       const generatedCards = JSON.parse(response.text || '[]').map((c: any) => ({ ...c, id: crypto.randomUUID() }));
       setCards(generatedCards);
       addUsage('flashcard');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to generate cards', err);
-      setError('Failed to generate flashcards. Please check your API key and try again.');
+      if (err?.message?.includes('429') || err?.status === 429 || err?.message?.includes('exceeded your current quota')) {
+        setError('You have exceeded your Gemini API quota. Please check your plan and billing details at https://ai.google.dev/gemini-api/docs/rate-limits.');
+      } else {
+        setError('Failed to generate flashcards. Please check your API key and try again.');
+      }
       // Fallback data for demo purposes
       setCards([
         { id: '1', front: 'What is the process by which a cell duplicates its DNA before division?', back: 'S phase of interphase', difficulty: 'medium' },
@@ -171,12 +192,54 @@ export default function FlashcardsView({ navigate, user }: Props) {
   const rateCard = (rating: 'hard' | 'ok' | 'easy') => {
     const newCards = [...cards];
     const cardIndex = newCards.findIndex(c => c.id === cards[currentIndex].id);
-    newCards[cardIndex].status = rating;
+    const card = newCards[cardIndex];
+    
+    // SM-2 Algorithm Implementation
+    let q = 0;
+    if (rating === 'hard') q = 3;
+    if (rating === 'ok') q = 4;
+    if (rating === 'easy') q = 5;
+
+    let { repetitions = 0, interval = 0, easeFactor = 2.5 } = card;
+
+    if (q < 3) {
+      repetitions = 0;
+      interval = 1;
+    } else {
+      if (repetitions === 0) {
+        interval = 1;
+      } else if (repetitions === 1) {
+        interval = 6;
+      } else {
+        interval = Math.round(interval * easeFactor);
+      }
+      repetitions += 1;
+    }
+
+    easeFactor = easeFactor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
+    if (easeFactor < 1.3) easeFactor = 1.3;
+
+    const nextReviewDate = new Date();
+    nextReviewDate.setDate(nextReviewDate.getDate() + interval);
+
+    newCards[cardIndex] = {
+      ...card,
+      status: rating,
+      repetitions,
+      interval,
+      easeFactor,
+      nextReviewDate: nextReviewDate.toISOString()
+    };
+    
+    // Save to global state (assuming we save decks, but here it's just local state for the generated cards)
+    // In a real app, we'd find the deck and update it. Since this view generates cards on the fly,
+    // we just update local state. If we want persistence, we need to save to a deck.
+    // For now, we just update the local cards array.
     
     if (rating === 'hard') {
-      // Move to end of deck
-      const card = newCards.splice(cardIndex, 1)[0];
-      newCards.push(card);
+      // Move to end of deck for immediate review
+      const movedCard = newCards.splice(cardIndex, 1)[0];
+      newCards.push(movedCard);
       setCards(newCards);
       setIsFlipped(false);
     } else {
@@ -198,15 +261,38 @@ export default function FlashcardsView({ navigate, user }: Props) {
     setSelectedCards(new Set());
   };
 
-  const visibleCards = filterMode === 'hard' 
-    ? cards.filter(c => c.status === 'hard' || c.difficulty === 'hard') 
-    : cards;
+  const visibleCards = useMemo(() => {
+    let result = cards.filter(c => uiDifficultyFilter.includes(c.difficulty));
+
+    if (filterMode === 'hard') {
+      result = result.filter(c => c.status === 'hard' || c.difficulty === 'hard');
+    }
+
+    if (sortBy === 'difficulty') {
+      const difficultyOrder = { hard: 0, medium: 1, easy: 2 };
+      result.sort((a, b) => difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty]);
+    } else if (sortBy === 'front') {
+      result.sort((a, b) => a.front.localeCompare(b.front));
+    } else if (sortBy === 'back') {
+      result.sort((a, b) => a.back.localeCompare(b.back));
+    }
+
+    return result;
+  }, [cards, filterMode, sortBy]);
 
   useEffect(() => {
     setCurrentIndex(0);
     setIsFlipped(false);
     setSelectedCards(new Set());
-  }, [filterMode, viewMode]);
+  }, [filterMode, viewMode, uiDifficultyFilter]);
+
+  const toggleUiDifficulty = (diff: string) => {
+    setUiDifficultyFilter(prev => 
+      prev.includes(diff) 
+        ? prev.filter(d => d !== diff) 
+        : [...prev, diff]
+    );
+  };
 
   if (!user) return null;
 
@@ -218,26 +304,45 @@ export default function FlashcardsView({ navigate, user }: Props) {
       <div className="p-4 md:p-8 max-w-5xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <h1 className="text-2xl md:text-3xl font-bold">{documentTitle}</h1>
-          <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto justify-start md:justify-end mt-4 md:mt-0 items-center">
             <button 
               onClick={() => navigate('upload')}
-              className="flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-[#211F35] border border-[rgba(124,58,237,0.2)] hover:bg-[#2A2845] transition-colors"
+              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
             >
-              <UploadCloud className="w-4 h-4 mr-2" /> Upload Another
+              <UploadCloud className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Upload Another
             </button>
             <button 
               onClick={summarizeDeck}
               disabled={summarizing}
-              className="flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-[#211F35] border border-[rgba(124,58,237,0.2)] hover:bg-[#2A2845] transition-colors"
+              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm disabled:opacity-50"
             >
-              {summarizing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <BookOpen className="w-4 h-4 mr-2" />} Summarize
+              {summarizing ? <Loader2 className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 animate-spin" /> : <BookOpen className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" />} Summarize
             </button>
             <button 
               onClick={() => setFilterMode(prev => prev === 'all' ? 'hard' : 'all')}
-              className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filterMode === 'hard' ? 'bg-red-600 text-white' : 'bg-[#1A1830] text-gray-400 hover:text-white'}`}
+              className={`flex items-center px-3 py-2 md:px-4 md:py-2.5 rounded-xl text-xs md:text-sm font-medium transition-all shadow-sm ${filterMode === 'hard' ? 'bg-red-600 text-white shadow-red-500/20 hover:bg-red-500' : 'bg-[#1A1830] border border-[rgba(124,58,237,0.2)] text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40'}`}
             >
               {filterMode === 'hard' ? 'Focus Mode: Hard' : 'Focus Mode: All'}
             </button>
+            
+            <div className="flex bg-[#1A1830] p-1 rounded-xl border border-[rgba(124,58,237,0.2)]">
+              {(['easy', 'medium', 'hard'] as const).map(diff => (
+                <button
+                  key={diff}
+                  onClick={() => toggleUiDifficulty(diff)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                    uiDifficultyFilter.includes(diff)
+                      ? diff === 'easy' ? 'bg-emerald-500 text-white' :
+                        diff === 'medium' ? 'bg-amber-500 text-white' :
+                        'bg-red-500 text-white'
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  {diff}
+                </button>
+              ))}
+            </div>
+
             <button 
               onClick={() => {
                 const shareData = {
@@ -256,22 +361,22 @@ export default function FlashcardsView({ navigate, user }: Props) {
                   alert('Link copied to clipboard!');
                 }
               }}
-              className="flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-[#211F35] border border-[rgba(124,58,237,0.2)] hover:bg-[#2A2845] transition-colors"
+              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-indigo-600 rounded-xl text-xs md:text-sm font-bold text-white hover:bg-indigo-500 transition-all shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5"
             >
-              <Share2 className="w-4 h-4 mr-2" /> Share
+              <Share2 className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Share
             </button>
-            <div className="flex gap-2 bg-[#1A1830] p-1 rounded-xl border border-[rgba(124,58,237,0.2)]">
+            <div className="flex gap-1 md:gap-2 bg-[#1A1830] p-1 rounded-xl border border-[rgba(124,58,237,0.2)]">
               <button 
                 onClick={() => setViewMode('study')}
-                className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'study' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                className={`flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${viewMode === 'study' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
               >
-                <Play className="w-4 h-4 mr-2" /> Quiz Mode
+                <Play className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Quiz Mode
               </button>
               <button 
                 onClick={() => setViewMode('grid')}
-                className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                className={`flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${viewMode === 'grid' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
               >
-                <Grid className="w-4 h-4 mr-2" /> Browse
+                <Grid className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Browse
               </button>
             </div>
           </div>
@@ -412,6 +517,24 @@ export default function FlashcardsView({ navigate, user }: Props) {
           </div>
         ) : (
           <>
+            <div className="flex justify-between items-center mb-6">
+              <div className="text-sm text-gray-400">
+                Showing {visibleCards.length} cards
+              </div>
+              <div className="flex items-center gap-2 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl px-3 py-1.5">
+                <Filter className="w-4 h-4 text-gray-400" />
+                <select 
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="bg-transparent text-sm text-gray-300 focus:outline-none cursor-pointer"
+                >
+                  <option value="none">Default Order</option>
+                  <option value="difficulty">Sort by Difficulty</option>
+                  <option value="front">Sort by Front (A-Z)</option>
+                  <option value="back">Sort by Back (A-Z)</option>
+                </select>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {visibleCards.map((card) => (
                 <div 

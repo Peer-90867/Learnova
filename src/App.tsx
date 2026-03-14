@@ -14,9 +14,17 @@ import ProfileView from './views/ProfileView';
 import StudySetsView from './views/StudySetsView';
 import ActivityView from './views/ActivityView';
 import PresentationView from './views/PresentationView';
+import ChatView from './views/ChatView';
+import TodoView from './views/TodoView';
+import QuizView from './views/QuizView';
+import MindMapView from './views/MindMapView';
+import FocusView from './views/FocusView';
+import AnalyticsView from './views/AnalyticsView';
+import PlannerView from './views/PlannerView';
+import GroupsView from './views/GroupsView';
 import { getCurrentUser, isAdmin } from './store';
 
-export type ViewName = 'landing' | 'auth' | 'dashboard' | 'upload' | 'flashcards' | 'notes' | 'pricing' | 'payment_pending' | 'admin_login' | 'admin_panel' | 'profile' | 'study_sets' | 'activity' | 'presentation';
+export type ViewName = 'landing' | 'auth' | 'dashboard' | 'upload' | 'flashcards' | 'notes' | 'pricing' | 'payment_pending' | 'admin_login' | 'admin_panel' | 'profile' | 'study_sets' | 'activity' | 'presentation' | 'chat' | 'todos' | 'quiz' | 'mindmap' | 'focus' | 'analytics' | 'planner' | 'groups';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewName>('landing');
@@ -64,6 +72,14 @@ export default function App() {
       case 'study_sets': return <StudySetsView navigate={navigate} user={user} />;
       case 'activity': return <ActivityView navigate={navigate} user={user} />;
       case 'presentation': return <PresentationView navigate={navigate} user={user} />;
+      case 'chat': return <ChatView navigate={navigate} user={user} />;
+      case 'todos': return <TodoView navigate={navigate} user={user} />;
+      case 'quiz': return <QuizView navigate={navigate} user={user} />;
+      case 'mindmap': return <MindMapView navigate={navigate} user={user} />;
+      case 'focus': return <FocusView navigate={navigate} user={user} />;
+      case 'analytics': return <AnalyticsView navigate={navigate} user={user} />;
+      case 'planner': return <PlannerView navigate={navigate} user={user} />;
+      case 'groups': return <GroupsView navigate={navigate} user={user} />;
       default: return <LandingView navigate={navigate} />;
     }
   };

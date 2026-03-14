@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { ViewName } from '../App';
 import Layout from '../components/Layout';
 import { getCurrentUser, getUploads, getCurrentDocumentId, addUsage, User } from '../store';
-import { GoogleGenAI } from '@google/genai';
-import { Loader2, Download, Share2, FileText, AlertCircle, Clipboard, UploadCloud } from 'lucide-react';
+import { GoogleGenAI, Modality } from "@google/genai";
+import { Loader2, Download, Share2, FileText, AlertCircle, Clipboard, UploadCloud, Volume2, Play, Pause, Headphones } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import jsPDF from 'jspdf';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -16,6 +17,89 @@ export default function NotesView({ navigate, user }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [documentTitle, setDocumentTitle] = useState('AI Smart Notes');
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+
+  const generateAudioSummary = async () => {
+    if (!notes || audioLoading) return;
+    
+    setAudioLoading(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const prompt = `Create a 2-minute audio study podcast summary of these notes. Speak clearly and highlight the most important points for a student to remember: \n\n${notes}`;
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-preview-tts",
+        contents: [{ parts: [{ text: prompt }] }],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: 'Kore' },
+            },
+          },
+        },
+      });
+
+      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (base64Audio) {
+        const blob = await (await fetch(`data:audio/wav;base64,${base64Audio}`)).blob();
+        const url = URL.createObjectURL(blob);
+        setAudioUrl(url);
+        if (audioRef.current) {
+          audioRef.current.src = url;
+          audioRef.current.play();
+          setIsPlaying(true);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to generate audio summary', err);
+      alert('Failed to generate audio summary. Please try again later.');
+    } finally {
+      setAudioLoading(false);
+    }
+  };
+
+  const toggleAudio = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    // Title
+    doc.setFontSize(22);
+    doc.setTextColor(40, 40, 40);
+    doc.text(documentTitle, 20, 20);
+    
+    // Content
+    doc.setFontSize(12);
+    doc.setTextColor(60, 60, 60);
+    
+    // Basic text wrapping for markdown content (this is a simplified approach)
+    // A robust solution would parse the markdown and render it to PDF properly
+    const splitText = doc.splitTextToSize(notes.replace(/#/g, '').replace(/\*/g, ''), 170);
+    
+    let y = 40;
+    for (let i = 0; i < splitText.length; i++) {
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(splitText[i], 20, y);
+      y += 7;
+    }
+    
+    doc.save(`${documentTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`);
+  };
 
   useEffect(() => {
     const generateNotes = async () => {
@@ -77,9 +161,13 @@ export default function NotesView({ navigate, user }: Props) {
 
         setNotes(response.text || '');
         addUsage('note');
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to generate notes', err);
-        setError('Failed to generate notes. Please check your API key and try again.');
+        if (err?.message?.includes('429') || err?.status === 429 || err?.message?.includes('exceeded your current quota')) {
+          setError('You have exceeded your Gemini API quota. Please check your plan and billing details at https://ai.google.dev/gemini-api/docs/rate-limits.');
+        } else {
+          setError('Failed to generate notes. Please check your API key and try again.');
+        }
         // Fallback for demo purposes if API fails
         setNotes(`# Biology Ch.5 — Cell Division\n\n## Overview\nCell division is the fundamental process by which eukaryotic cells reproduce.\n\n## Types of Cell Division\n\n### 1. Mitosis\n*   **Purpose:** Growth and repair.\n*   **Result:** Produces 2 identical diploid daughter cells.\n\n### 3. Meiosis\n*   **Purpose:** Sexual reproduction.\n*   **Result:** Produces 4 genetically diverse haploid cells.\n\n## Key Phases\n*   **Interphase:** DNA replication occurs during the **S phase**.`);
         addUsage('note');
@@ -101,24 +189,50 @@ export default function NotesView({ navigate, user }: Props) {
             <FileText className="w-6 h-6 md:w-8 md:h-8 mr-3 text-purple-400" />
             {documentTitle}
           </h1>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto justify-start md:justify-end mt-4 md:mt-0">
+            <button 
+              onClick={audioUrl ? toggleAudio : generateAudioSummary}
+              disabled={audioLoading}
+              className={`flex items-center px-3 py-2 md:px-4 md:py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shadow-md ${
+                isPlaying 
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20' 
+                  : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20'
+              } disabled:opacity-50`}
+            >
+              {audioLoading ? (
+                <Loader2 className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 animate-spin" />
+              ) : isPlaying ? (
+                <Pause className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" />
+              ) : (
+                <Headphones className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" />
+              )}
+              {audioLoading ? 'Generating Podcast...' : isPlaying ? 'Pause Summary' : 'Listen to Summary'}
+            </button>
+            <audio 
+              ref={audioRef} 
+              onEnded={() => setIsPlaying(false)} 
+              className="hidden" 
+            />
             <button 
               onClick={() => navigate('upload')}
-              className="flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-[#211F35] border border-[rgba(124,58,237,0.2)] hover:bg-[#2A2845] transition-colors"
+              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
             >
-              <UploadCloud className="w-4 h-4 mr-2" /> Upload Another
+              <UploadCloud className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Upload Another
             </button>
             <button 
               onClick={() => {
                 navigator.clipboard.writeText(notes);
                 alert('Notes copied to clipboard!');
               }}
-              className="flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-[#211F35] border border-[rgba(124,58,237,0.2)] hover:bg-[#2A2845] transition-colors"
+              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
             >
-              <Clipboard className="w-4 h-4 mr-2" /> Copy
+              <Clipboard className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Copy
             </button>
-            <button className="flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-[#211F35] border border-[rgba(124,58,237,0.2)] hover:bg-[#2A2845] transition-colors">
-              <Download className="w-4 h-4 mr-2" /> Export PDF
+            <button 
+              onClick={exportToPDF}
+              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+            >
+              <Download className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Export PDF
             </button>
             <button 
               onClick={() => {
@@ -138,9 +252,9 @@ export default function NotesView({ navigate, user }: Props) {
                   alert('Link copied to clipboard!');
                 }
               }}
-              className="flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 transition-colors"
+              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-indigo-600 rounded-xl text-xs md:text-sm font-bold text-white hover:bg-indigo-500 transition-all shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5"
             >
-              <Share2 className="w-4 h-4 mr-2" /> Share
+              <Share2 className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Share
             </button>
           </div>
         </div>
