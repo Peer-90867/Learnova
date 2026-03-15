@@ -4,7 +4,7 @@ import Layout from '../components/Layout';
 import { getCurrentUser, getUploads, getCurrentDocumentId, addUsage, User, MindMap, MindMapNode, setMindMaps, getMindMaps, getCache, setCache } from '../store';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, Type } from '@google/genai';
-import { Loader2, AlertCircle, Share2, Download, RefreshCw, GitBranch, Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Loader2, AlertCircle, Share2, Download, RefreshCw, GitBranch, Maximize2, ZoomIn, ZoomOut, Search, Palette, ChevronRight, ChevronDown, FileJson, Image as ImageIcon } from 'lucide-react';
 import * as d3 from 'd3';
 
 interface Props {
@@ -17,13 +17,16 @@ export default function MindMapView({ navigate, user }: Props) {
   const [error, setError] = useState('');
   const [mindMap, setMindMap] = useState<MindMap | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const [zoom, setZoom] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [themeColor, setThemeColor] = useState('#8b5cf6'); // Default indigo
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
 
   const generateMindMap = async () => {
     if (!user) return;
     
     setLoading(true);
     setError('');
+    setCollapsedIds(new Set());
     
     try {
       const uploads = getUploads().filter(u => u && u.userId === user?.id);
@@ -51,9 +54,10 @@ export default function MindMapView({ navigate, user }: Props) {
       let promptContent = targetUpload.content || '';
       let basePrompt = `Generate a hierarchical mind map structure based on the following content. 
       The output should be a nested JSON object representing the mind map.
-      Each node should have an 'id', 'text', and 'children' (an array of nodes).
+      Each node should have an 'id' (unique string), 'text', and 'children' (an array of nodes).
       The root node should be the main topic of the document.
-      Limit to 3-4 levels deep and 3-5 children per node for clarity.`;
+      Limit to 3-4 levels deep and 3-5 children per node for clarity.
+      The language of the mind map should be ${user.settings?.language || 'English'} and the tone should be ${user.settings?.tone || 'Academic'}.`;
 
       let contents: any = `${basePrompt}\n\nContent:\n${promptContent}`;
       
@@ -136,7 +140,16 @@ export default function MindMapView({ navigate, user }: Props) {
     if (mindMap) {
       renderMindMap();
     }
-  }, [mindMap]);
+  }, [mindMap, searchQuery, themeColor, collapsedIds]);
+
+  const toggleNode = (id: string) => {
+    setCollapsedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const renderMindMap = () => {
     if (!svgRef.current || !mindMap) return;
@@ -150,7 +163,7 @@ export default function MindMapView({ navigate, user }: Props) {
 
     // Add zoom behavior
     const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.5, 3])
+      .scaleExtent([0.3, 3])
       .on("zoom", (event) => {
         g.attr("transform", event.transform);
       });
@@ -159,9 +172,12 @@ export default function MindMapView({ navigate, user }: Props) {
 
     const g = svg.append("g");
 
-    const tree = d3.tree<MindMapNode>().size([height - margin.top - margin.bottom, width - margin.left - margin.right]);
+    // Process hierarchy with collapse state
+    const root = d3.hierarchy(mindMap.root, (d) => {
+      return collapsedIds.has(d.id) ? null : d.children;
+    });
 
-    const root = d3.hierarchy(mindMap.root);
+    const tree = d3.tree<MindMapNode>().size([height - margin.top - margin.bottom, width - margin.left - margin.right]);
     tree(root);
 
     // Links
@@ -173,7 +189,8 @@ export default function MindMapView({ navigate, user }: Props) {
         .x(d => d.y + margin.left)
         .y(d => d.x + margin.top))
       .attr("fill", "none")
-      .attr("stroke", "rgba(124, 58, 237, 0.4)")
+      .attr("stroke", themeColor)
+      .attr("stroke-opacity", 0.3)
       .attr("stroke-width", 2);
 
     // Nodes
@@ -181,28 +198,53 @@ export default function MindMapView({ navigate, user }: Props) {
       .data(root.descendants())
       .enter().append("g")
       .attr("class", d => "node" + (d.children ? " node--internal" : " node--leaf"))
-      .attr("transform", d => `translate(${d.y + margin.left},${d.x + margin.top})`);
+      .attr("transform", d => `translate(${d.y + margin.left},${d.x + margin.top})`)
+      .style("cursor", d => (d.data.children && d.data.children.length > 0) ? "pointer" : "default")
+      .on("click", (event, d) => {
+        if (d.data.children && d.data.children.length > 0) {
+          toggleNode(d.data.id);
+        }
+      });
+
+    // Search matching
+    const isMatch = (text: string) => searchQuery && text.toLowerCase().includes(searchQuery.toLowerCase());
 
     node.append("circle")
-      .attr("r", d => d.depth === 0 ? 10 : 6)
-      .attr("fill", d => d.depth === 0 ? "#8b5cf6" : d.depth === 1 ? "#4f46e5" : "#6366f1")
+      .attr("r", d => d.depth === 0 ? 12 : 8)
+      .attr("fill", d => {
+        if (isMatch(d.data.text)) return "#ef4444"; // Red for search match
+        return d.depth === 0 ? themeColor : d3.color(themeColor)?.brighter(d.depth * 0.5).toString() || themeColor;
+      })
       .attr("stroke", "#fff")
-      .attr("stroke-width", 2)
-      .style("filter", "drop-shadow(0 0 4px rgba(139, 92, 246, 0.5))");
+      .attr("stroke-width", d => isMatch(d.data.text) ? 3 : 2)
+      .style("filter", d => isMatch(d.data.text) ? "drop-shadow(0 0 8px #ef4444)" : "drop-shadow(0 0 4px rgba(0,0,0,0.3))");
+
+    // Add collapse/expand indicator
+    node.filter(d => d.data.children && d.data.children.length > 0)
+      .append("text")
+      .attr("dy", "0.35em")
+      .attr("text-anchor", "middle")
+      .attr("fill", "#fff")
+      .style("font-size", "10px")
+      .style("pointer-events", "none")
+      .text(d => collapsedIds.has(d.data.id) ? "+" : "-");
 
     node.append("text")
       .attr("dy", ".35em")
-      .attr("x", d => d.children ? -15 : 15)
+      .attr("x", d => d.children ? -18 : 18)
       .attr("text-anchor", d => d.children ? "end" : "start")
       .text(d => d.data.text)
-      .attr("fill", "#fff")
+      .attr("fill", d => isMatch(d.data.text) ? "#ef4444" : "#fff")
       .style("font-size", d => d.depth === 0 ? "16px" : "12px")
-      .style("font-weight", d => d.depth === 0 ? "bold" : "500")
+      .style("font-weight", d => (d.depth === 0 || isMatch(d.data.text)) ? "bold" : "500")
       .style("text-shadow", "0 2px 4px rgba(0,0,0,0.8)")
       .style("pointer-events", "none");
 
-    // Initial transform to center
-    svg.call(zoomBehavior.transform as any, d3.zoomIdentity.translate(0, 0).scale(0.8));
+    // Initial transform to center if first render
+    if (!svg.attr("data-initialized")) {
+      svg.call(zoomBehavior.transform as any, d3.zoomIdentity.translate(0, 0).scale(0.8));
+      svg.attr("data-initialized", "true");
+    }
   };
 
   const handleZoom = (delta: number) => {
@@ -211,11 +253,63 @@ export default function MindMapView({ navigate, user }: Props) {
     svg.transition().call(d3.zoom().scaleBy as any, delta);
   };
 
+  const exportJSON = () => {
+    if (!mindMap) return;
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(mindMap, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `${mindMap.title.replace(/\s+/g, '_')}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  const exportPNG = () => {
+    if (!svgRef.current || !mindMap) return;
+    const svgElement = svgRef.current;
+    const clone = svgElement.cloneNode(true) as SVGSVGElement;
+    
+    const width = 1000;
+    const height = 800;
+    clone.setAttribute('width', width.toString());
+    clone.setAttribute('height', height.toString());
+    
+    const svgData = new XMLSerializer().serializeToString(clone);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    
+    const img = new Image();
+    img.onload = () => {
+      if (ctx) {
+        ctx.fillStyle = "#0F0E17"; // Match background
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const a = document.createElement("a");
+        a.download = `${mindMap.title.replace(/\s+/g, '_')}.png`;
+        a.href = canvas.toDataURL("image/png");
+        a.click();
+      }
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+  };
+
   useEffect(() => {
     generateMindMap();
   }, [user?.id]);
 
   if (!user) return null;
+
+  const colors = [
+    { name: 'Indigo', value: '#8b5cf6' },
+    { name: 'Emerald', value: '#10b981' },
+    { name: 'Rose', value: '#f43f5e' },
+    { name: 'Amber', value: '#f59e0b' },
+    { name: 'Sky', value: '#0ea5e9' },
+    { name: 'Violet', value: '#7c3aed' },
+  ];
 
   return (
     <Layout navigate={navigate} activeView="dashboard">
@@ -228,7 +322,30 @@ export default function MindMapView({ navigate, user }: Props) {
             </h1>
             <p className="text-gray-400 mt-1">Visualize connections and hierarchy in your documents</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <input 
+                type="text"
+                placeholder="Search nodes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 transition-all w-48"
+              />
+            </div>
+            
+            <div className="flex bg-[#1A1830] p-1 rounded-xl border border-[rgba(124,58,237,0.2)]">
+              {colors.map((color) => (
+                <button
+                  key={color.value}
+                  onClick={() => setThemeColor(color.value)}
+                  className={`w-8 h-8 rounded-lg transition-all ${themeColor === color.value ? 'scale-110 ring-2 ring-white' : 'opacity-50 hover:opacity-100'}`}
+                  style={{ backgroundColor: color.value }}
+                  title={color.name}
+                />
+              ))}
+            </div>
+
             <button 
               onClick={generateMindMap}
               disabled={loading}
@@ -287,6 +404,17 @@ export default function MindMapView({ navigate, user }: Props) {
               </button>
             </div>
 
+            <div className="absolute bottom-6 left-6 z-10 bg-black/40 backdrop-blur-md p-3 rounded-xl border border-white/5 text-xs text-gray-400">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full bg-white/40" />
+                <span>Click nodes with children to collapse/expand</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-red-500" />
+                <span>Highlighted nodes match your search</span>
+              </div>
+            </div>
+
             <div className="overflow-auto custom-scrollbar">
               <svg 
                 ref={svgRef} 
@@ -302,8 +430,17 @@ export default function MindMapView({ navigate, user }: Props) {
                 Created on {new Date(mindMap.createdAt).toLocaleDateString()}
               </div>
               <div className="flex gap-3">
-                <button className="flex items-center px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium text-gray-300 transition-colors">
-                  <Download className="w-4 h-4 mr-2" /> Export PDF
+                <button 
+                  onClick={exportJSON}
+                  className="flex items-center px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium text-gray-300 transition-colors"
+                >
+                  <FileJson className="w-4 h-4 mr-2" /> Export JSON
+                </button>
+                <button 
+                  onClick={exportPNG}
+                  className="flex items-center px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium text-gray-300 transition-colors"
+                >
+                  <ImageIcon className="w-4 h-4 mr-2" /> Export PNG
                 </button>
                 <button className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-sm font-medium text-white transition-colors">
                   <Share2 className="w-4 h-4 mr-2" /> Share

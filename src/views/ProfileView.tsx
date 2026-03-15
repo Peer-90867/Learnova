@@ -198,6 +198,44 @@ export default function ProfileView({ navigate, user }: Props) {
                 />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Language</label>
+                <select 
+                  value={user.settings?.language || 'English'}
+                  onChange={(e) => {
+                    const newSettings = { ...user.settings, language: e.target.value };
+                    setCurrentUser({ ...user, settings: newSettings as any });
+                  }}
+                  className="w-full bg-[var(--color-bg)] border border-[rgba(124,58,237,0.2)] rounded-xl px-4 py-3 text-[var(--color-text)] focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                  <option value="English">English</option>
+                  <option value="Spanish">Spanish</option>
+                  <option value="French">French</option>
+                  <option value="German">German</option>
+                  <option value="Chinese">Chinese</option>
+                  <option value="Japanese">Japanese</option>
+                  <option value="Korean">Korean</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Tone</label>
+                <select 
+                  value={user.settings?.tone || 'Academic'}
+                  onChange={(e) => {
+                    const newSettings = { ...user.settings, tone: e.target.value };
+                    setCurrentUser({ ...user, settings: newSettings as any });
+                  }}
+                  className="w-full bg-[var(--color-bg)] border border-[rgba(124,58,237,0.2)] rounded-xl px-4 py-3 text-[var(--color-text)] focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                  <option value="Academic">Academic</option>
+                  <option value="Casual">Casual</option>
+                  <option value="Humorous">Humorous</option>
+                  <option value="Encouraging">Encouraging</option>
+                  <option value="Socratic">Socratic</option>
+                </select>
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">New Password (leave blank to keep current)</label>
               <input

@@ -80,6 +80,7 @@ export interface MindMapNode {
   id: string;
   text: string;
   children: MindMapNode[];
+  collapsed?: boolean;
 }
 
 export interface MindMap {
@@ -127,6 +128,7 @@ export interface StudyGroup {
   subject?: string;
   password?: string;
   chatHistory: ChatMessage[];
+  collaborativeDocument: string;
 }
 
 export interface Achievement {
@@ -155,6 +157,8 @@ export interface User {
     flashcardDifficulty: 'easy' | 'medium' | 'hard';
     noteStyle: 'concise' | 'detailed' | 'bulleted';
     theme: 'light' | 'dark';
+    language?: string;
+    tone?: string;
   };
 }
 

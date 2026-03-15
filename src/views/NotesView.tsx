@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ViewName } from '../App';
 import Layout from '../components/Layout';
-import { getCurrentUser, getUploads, getCurrentDocumentId, addUsage, User, getCache, setCache } from '../store';
+import { getCurrentUser, getUploads, getCurrentDocumentId, addUsage, User, getCache, setCache, getDecks, setDecks } from '../store';
 import { GoogleGenAI, Modality } from "@google/genai";
-import { Loader2, Download, Share2, FileText, AlertCircle, Clipboard, UploadCloud, Volume2, Play, Pause, Headphones, Zap, Mic, Edit3, Save, X } from 'lucide-react';
+import { Loader2, Download, Share2, FileText, AlertCircle, Clipboard, UploadCloud, Volume2, Play, Pause, Headphones, Zap, Mic, Edit3, Save, X, GitBranch, Layers } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
 
@@ -145,6 +145,52 @@ export default function NotesView({ navigate, user }: Props) {
     doc.save(`${documentTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`);
   };
 
+  const generateFlashcards = async () => {
+    if (!user || !notes) return;
+    setLoading(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const prompt = `Generate 10 flashcards based on the following notes. Return ONLY a JSON array of objects with 'front' and 'back' properties.
+      
+      Notes:
+      ${notes}`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.1-pro-preview',
+        contents: [{ parts: [{ text: prompt }] }],
+        config: {
+          responseMimeType: "application/json",
+        }
+      });
+
+      const text = response.text || '[]';
+      const parsedCards = JSON.parse(text);
+      
+      const newDeck = {
+        id: Date.now(),
+        userId: user.id,
+        name: `${documentTitle} - Flashcards`,
+        cards: parsedCards.map((c: any, i: number) => ({
+          id: `card-${Date.now()}-${i}`,
+          front: c.front,
+          back: c.back,
+          difficulty: 'medium'
+        })),
+        createdAt: new Date().toISOString()
+      };
+
+      const currentDecks = getDecks();
+      setDecks([newDeck, ...currentDecks]);
+      addUsage('flashcard');
+      navigate('flashcards');
+    } catch (err) {
+      console.error('Failed to generate flashcards', err);
+      alert('Failed to generate flashcards. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const generateNotes = async () => {
       if (!user) return;
@@ -202,7 +248,7 @@ export default function NotesView({ navigate, user }: Props) {
           }
         }
         
-        const systemInstruction = `You are an expert tutor. Generate ${user.settings?.noteStyle || 'detailed'}, well-structured study notes in Markdown format based on the provided text. Include clear headings, bullet points, and use bold text for key terms. Ensure the notes are easy to read and summarize the core concepts effectively.`;
+        const systemInstruction = `You are an expert tutor. Generate ${user.settings?.noteStyle || 'detailed'}, well-structured study notes in Markdown format based on the provided text. Include clear headings, bullet points, and use bold text for key terms. Ensure the notes are easy to read and summarize the core concepts effectively. The tone should be ${user.settings?.tone || 'Academic'} and the language should be ${user.settings?.language || 'English'}.`;
         
         const response = await ai.models.generateContent({
           model: 'gemini-3.1-pro-preview',
@@ -317,6 +363,18 @@ export default function NotesView({ navigate, user }: Props) {
               <UploadCloud className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Upload Another
             </button>
             <button 
+              onClick={() => navigate('mindmap')}
+              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+            >
+              <GitBranch className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Mind Map
+            </button>
+            <button 
+              onClick={() => navigate('flashcards')}
+              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+            >
+              <Layers className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Flashcards
+            </button>
+            <button 
               onClick={() => {
                 navigator.clipboard.writeText(notes);
                 alert('Notes copied to clipboard!');
@@ -326,10 +384,31 @@ export default function NotesView({ navigate, user }: Props) {
               <Clipboard className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Copy
             </button>
             <button 
+              onClick={() => {
+                const blob = new Blob([notes], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${documentTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+            >
+              <Download className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Export MD
+            </button>
+            <button 
               onClick={exportToPDF}
               className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
             >
               <Download className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Export PDF
+            </button>
+            <button 
+              onClick={generateFlashcards}
+              disabled={loading}
+              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm disabled:opacity-50"
+            >
+              <Layers className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Gen Flashcards
             </button>
             <button 
               onClick={() => {

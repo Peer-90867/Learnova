@@ -22,6 +22,8 @@ export default function GroupsView({ navigate, user }: Props) {
   const [passwordInput, setPasswordInput] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [activeTab, setActiveTab] = useState<'chat' | 'notes'>('chat');
+  const [collaborativeNotes, setCollaborativeNotes] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [socket, setSocket] = useState<WebSocket | null>(null);
 
@@ -37,6 +39,7 @@ export default function GroupsView({ navigate, user }: Props) {
     } else {
       setSelectedGroupId(groupId);
       setChatMessages(group?.chatHistory || []);
+      setCollaborativeNotes(group?.collaborativeDocument || '');
     }
   };
 
@@ -45,6 +48,7 @@ export default function GroupsView({ navigate, user }: Props) {
     if (group && group.password === passwordInput) {
       setShowPasswordModal(false);
       setChatMessages(group.chatHistory || []);
+      setCollaborativeNotes(group.collaborativeDocument || '');
       setPasswordInput('');
     } else {
       alert('Incorrect password');
@@ -61,6 +65,8 @@ export default function GroupsView({ navigate, user }: Props) {
         const data = JSON.parse(event.data);
         if (data.type === 'chat') {
           handleNewMessage(data.message);
+        } else if (data.type === 'notes') {
+          setCollaborativeNotes(data.notes);
         }
       };
 
@@ -99,6 +105,22 @@ export default function GroupsView({ navigate, user }: Props) {
     setNewMessage('');
   };
 
+  const updateCollaborativeNotes = (notes: string) => {
+    if (!socket) return;
+    setCollaborativeNotes(notes);
+    socket.send(JSON.stringify({ type: 'notes', notes }));
+
+    // Persist to store
+    const updatedGroups = groups.map(g => {
+      if (g.id === selectedGroupId) {
+        return { ...g, collaborativeDocument: notes };
+      }
+      return g;
+    });
+    setGroups(updatedGroups);
+    setStudyGroups(updatedGroups);
+  };
+
   const createGroup = () => {
     if (!user || !newGroupName.trim()) return;
     const newGroup: StudyGroup = {
@@ -111,7 +133,8 @@ export default function GroupsView({ navigate, user }: Props) {
       createdAt: new Date().toISOString(),
       subject: newGroupSubject,
       password: newGroupPassword,
-      chatHistory: []
+      chatHistory: [],
+      collaborativeDocument: ''
     };
     const updatedGroups = [newGroup, ...groups];
     setGroups(updatedGroups);
@@ -319,16 +342,20 @@ export default function GroupsView({ navigate, user }: Props) {
                     </div>
                   </div>
                 </div>
-                <button 
-                  onClick={() => {
-                    const shareUrl = `${window.location.origin}?groupId=${selectedGroupId}`;
-                    navigator.clipboard.writeText(shareUrl);
-                    alert('Share link copied to clipboard!');
-                  }}
-                  className="p-2 hover:bg-white/10 rounded-full text-gray-400 transition-colors"
-                >
-                  <Share2 className="w-5 h-5" />
-                </button>
+                <div className="flex bg-[#0F0E17] rounded-xl p-1">
+                  <button 
+                    onClick={() => setActiveTab('chat')}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'chat' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                  >
+                    Chat
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('notes')}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'notes' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                  >
+                    Notes
+                  </button>
+                </div>
                 <button 
                   onClick={() => {
                     setSelectedGroupId(null);
@@ -340,51 +367,64 @@ export default function GroupsView({ navigate, user }: Props) {
                 </button>
               </div>
 
-              {/* Chat Messages */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {chatMessages.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
-                    <MessageCircle className="w-12 h-12 mb-4" />
-                    <p>No messages yet. Start the conversation!</p>
+              {/* Chat/Notes Content */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {activeTab === 'chat' ? (
+                  <div className="space-y-4">
+                    {chatMessages.length === 0 ? (
+                      <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
+                        <MessageCircle className="w-12 h-12 mb-4" />
+                        <p>No messages yet. Start the conversation!</p>
+                      </div>
+                    ) : (
+                      chatMessages.map((msg) => (
+                        <div key={msg.id} className={`flex flex-col ${msg.userId === user.id ? 'items-end' : 'items-start'}`}>
+                          <div className="flex items-center mb-1 gap-2">
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{msg.userName}</span>
+                            <span className="text-[10px] text-gray-600">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <div className={`px-4 py-2 rounded-2xl max-w-[80%] ${
+                            msg.userId === user.id 
+                              ? 'bg-indigo-600 text-white rounded-tr-none' 
+                              : 'bg-white/5 text-gray-300 rounded-tl-none border border-white/5'
+                          }`}>
+                            {msg.text}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 ) : (
-                  chatMessages.map((msg) => (
-                    <div key={msg.id} className={`flex flex-col ${msg.userId === user.id ? 'items-end' : 'items-start'}`}>
-                      <div className="flex items-center mb-1 gap-2">
-                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{msg.userName}</span>
-                        <span className="text-[10px] text-gray-600">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      </div>
-                      <div className={`px-4 py-2 rounded-2xl max-w-[80%] ${
-                        msg.userId === user.id 
-                          ? 'bg-indigo-600 text-white rounded-tr-none' 
-                          : 'bg-white/5 text-gray-300 rounded-tl-none border border-white/5'
-                      }`}>
-                        {msg.text}
-                      </div>
-                    </div>
-                  ))
+                  <textarea
+                    value={collaborativeNotes}
+                    onChange={e => updateCollaborativeNotes(e.target.value)}
+                    placeholder="Start collaborative note-taking..."
+                    className="w-full h-full bg-transparent text-gray-200 font-mono text-sm focus:outline-none resize-none"
+                  />
                 )}
               </div>
 
               {/* Chat Input */}
-              <div className="p-6 border-t border-white/5 bg-white/5">
-                <div className="flex gap-3">
-                  <input 
-                    type="text" 
-                    value={newMessage}
-                    onChange={e => setNewMessage(e.target.value)}
-                    onKeyPress={e => e.key === 'Enter' && sendMessage()}
-                    placeholder="Type your message..."
-                    className="flex-1 bg-[#0F0E17] border border-[rgba(124,58,237,0.2)] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-all"
-                  />
-                  <button 
-                    onClick={sendMessage}
-                    className="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all shadow-lg shadow-indigo-500/20"
-                  >
-                    <Send className="w-5 h-5" />
-                  </button>
+              {activeTab === 'chat' && (
+                <div className="p-6 border-t border-white/5 bg-white/5">
+                  <div className="flex gap-3">
+                    <input 
+                      type="text" 
+                      value={newMessage}
+                      onChange={e => setNewMessage(e.target.value)}
+                      onKeyPress={e => e.key === 'Enter' && sendMessage()}
+                      placeholder="Type your message..."
+                      className="flex-1 bg-[#0F0E17] border border-[rgba(124,58,237,0.2)] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-all"
+                    />
+                    <button 
+                      onClick={sendMessage}
+                      className="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all shadow-lg shadow-indigo-500/20"
+                    >
+                      <Send className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </motion.div>
           </motion.div>
         )}

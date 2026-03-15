@@ -54,6 +54,12 @@ export default function PlannerView({ navigate, user }: Props) {
     setPlannedTasks(updatedTasks);
   };
 
+  const clearCompleted = () => {
+    const updatedTasks = tasks.filter(t => !(t.completed && t.date === selectedDate));
+    setTasks(updatedTasks);
+    setPlannedTasks(updatedTasks);
+  };
+
   const generateAIPriorities = async () => {
     if (!user) return;
     setIsGenerating(true);
@@ -203,12 +209,36 @@ export default function PlannerView({ navigate, user }: Props) {
               </h1>
               <p className="text-gray-400">Plan your study goals for the day</p>
             </div>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-lg shadow-indigo-500/20 transition-all"
-            >
-              <Plus className="w-6 h-6" />
-            </button>
+            <div className="flex items-center gap-3">
+              {filteredTasks.length > 0 && (
+                <button 
+                  onClick={() => {
+                    if (confirm('Are you sure you want to delete all tasks for this date?')) {
+                      const updatedTasks = tasks.filter(t => t.date !== selectedDate);
+                      setTasks(updatedTasks);
+                      setPlannedTasks(updatedTasks);
+                    }
+                  }}
+                  className="px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-2xl transition-all text-sm font-bold"
+                >
+                  Clear All
+                </button>
+              )}
+              {tasks.some(t => t.completed && t.date === selectedDate) && (
+                <button 
+                  onClick={clearCompleted}
+                  className="px-4 py-3 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded-2xl transition-all text-sm font-bold"
+                >
+                  Clear Completed
+                </button>
+              )}
+              <button 
+                onClick={() => setShowAddModal(true)}
+                className="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-lg shadow-indigo-500/20 transition-all"
+              >
+                <Plus className="w-6 h-6" />
+              </button>
+            </div>
           </div>
 
           <div className="space-y-4">

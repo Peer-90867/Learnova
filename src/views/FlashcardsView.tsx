@@ -4,7 +4,7 @@ import Layout from '../components/Layout';
 import { getCurrentUser, getUploads, getCurrentDocumentId, addUsage, Flashcard, Deck, getDecks, setDecks, User, getCache, setCache } from '../store';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, Type } from '@google/genai';
-import { ChevronLeft, ChevronRight, RefreshCw, Grid, Play, Loader2, AlertCircle, Share2, BookOpen, UploadCloud, Filter, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RefreshCw, Grid, Play, Loader2, AlertCircle, Share2, BookOpen, UploadCloud, Filter, CheckCircle2, GitBranch } from 'lucide-react';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -96,7 +96,7 @@ export default function FlashcardsView({ navigate, user }: Props) {
         promptContent = promptContent.substring(0, 30000) + "... [content truncated]";
       }
 
-      let contents: any = `Generate ${cardCount} flashcards with difficulty levels: ${difficultyFilter.join(', ')} based on the following content:\n\n${promptContent}`;
+      let contents: any = `Generate ${cardCount} flashcards with difficulty levels: ${difficultyFilter.join(', ')} based on the following content:\n\n${promptContent}\n\nThe language of the flashcards should be ${user.settings?.language || 'English'} and the tone should be ${user.settings?.tone || 'Academic'}.`;
       
       if (promptContent.startsWith('data:')) {
         const match = promptContent.match(/^data:(.+);base64,(.*)$/);
@@ -106,7 +106,7 @@ export default function FlashcardsView({ navigate, user }: Props) {
           contents = [
             {
               parts: [
-                { text: `Generate ${cardCount} flashcards with difficulty levels: ${difficultyFilter.join(', ')} based on the following document:` },
+                { text: `Generate ${cardCount} flashcards with difficulty levels: ${difficultyFilter.join(', ')} based on the following document. The language of the flashcards should be ${user.settings?.language || 'English'} and the tone should be ${user.settings?.tone || 'Academic'}:` },
                 {
                   inlineData: {
                     mimeType: mimeType,
@@ -278,6 +278,12 @@ export default function FlashcardsView({ navigate, user }: Props) {
     setSelectedCards(new Set());
   };
 
+  const bulkDelete = () => {
+    const newCards = cards.filter(c => !selectedCards.has(c.id));
+    setCards(newCards);
+    setSelectedCards(new Set());
+  };
+
   const visibleCards = useMemo(() => {
     let result = cards.filter(c => uiDifficultyFilter.includes(c.difficulty));
 
@@ -361,6 +367,12 @@ export default function FlashcardsView({ navigate, user }: Props) {
             </div>
 
             <button 
+              onClick={() => navigate('mindmap')}
+              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+            >
+              <GitBranch className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Mind Map
+            </button>
+            <button 
               onClick={() => {
                 const shareData = {
                   title: documentTitle,
@@ -383,6 +395,18 @@ export default function FlashcardsView({ navigate, user }: Props) {
               <Share2 className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Share
             </button>
             <div className="flex gap-1 md:gap-2 bg-[#1A1830] p-1 rounded-xl border border-[rgba(124,58,237,0.2)]">
+              <button 
+                onClick={() => {
+                  const shuffled = [...cards].sort(() => Math.random() - 0.5);
+                  setCards(shuffled);
+                  setCurrentIndex(0);
+                  setIsFlipped(false);
+                }}
+                className="flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-white/5"
+                title="Shuffle Cards"
+              >
+                <RefreshCw className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Shuffle
+              </button>
               <button 
                 onClick={() => setViewMode('study')}
                 className={`flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${viewMode === 'study' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
@@ -581,8 +605,24 @@ export default function FlashcardsView({ navigate, user }: Props) {
         ) : (
           <>
             <div className="flex justify-between items-center mb-6">
-              <div className="text-sm text-gray-400">
-                Showing {visibleCards.length} cards
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-400">
+                  Showing {visibleCards.length} cards
+                </div>
+                {visibleCards.length > 0 && (
+                  <button 
+                    onClick={() => {
+                      if (selectedCards.size === visibleCards.length) {
+                        setSelectedCards(new Set());
+                      } else {
+                        setSelectedCards(new Set(visibleCards.map(c => c.id)));
+                      }
+                    }}
+                    className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                  >
+                    {selectedCards.size === visibleCards.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                )}
               </div>
               <div className="flex items-center gap-2 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl px-3 py-1.5">
                 <Filter className="w-4 h-4 text-gray-400" />
@@ -635,6 +675,8 @@ export default function FlashcardsView({ navigate, user }: Props) {
                 <button onClick={() => bulkRate('hard')} className="px-4 py-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-colors">Hard</button>
                 <button onClick={() => bulkRate('ok')} className="px-4 py-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-colors">OK</button>
                 <button onClick={() => bulkRate('easy')} className="px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors">Easy</button>
+                <div className="w-px h-6 bg-white/10 mx-2"></div>
+                <button onClick={bulkDelete} className="px-4 py-2 rounded-lg bg-gray-500/10 text-gray-400 border border-gray-500/30 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 transition-colors">Delete</button>
               </div>
             )}
           </>

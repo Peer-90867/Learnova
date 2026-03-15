@@ -3,7 +3,7 @@ import { ViewName } from '../App';
 import Layout from '../components/Layout';
 import { getCurrentUser, getUploads, Upload, setCurrentDocumentId, getUsage, User } from '../store';
 import { motion } from 'motion/react';
-import { FileText, Layers, Clock, Target, UploadCloud, MessageSquare, Lock, TrendingUp, TrendingDown, Presentation, CheckCircle2, Search, Trophy, Star, Flame, Sparkles, ArrowRight, Activity } from 'lucide-react';
+import { FileText, Layers, Clock, Target, UploadCloud, MessageSquare, Lock, TrendingUp, TrendingDown, Presentation, CheckCircle2, Search, Trophy, Star, Flame, Sparkles, ArrowRight, Activity, Mic } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 
 interface Props {
@@ -116,6 +116,19 @@ export default function DashboardView({ navigate, user }: Props) {
           </h1>
           <div className="bg-[#211F35] border border-[rgba(124,58,237,0.2)] px-4 py-2 rounded-full text-sm font-medium text-amber-400 capitalize">
             {user.plan} Plan
+          </div>
+        </div>
+
+        {/* Study Tip of the Day */}
+        <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 p-4 rounded-2xl mb-8 flex items-start sm:items-center gap-4">
+          <div className="bg-indigo-500/20 p-2 rounded-xl flex-shrink-0">
+            <Sparkles className="w-6 h-6 text-indigo-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-indigo-300 mb-1">Study Tip of the Day</h3>
+            <p className="text-sm text-gray-300">
+              Use the <span className="text-white font-medium">Feynman Technique</span>: Try explaining a concept in plain English as if teaching it to a beginner. If you stumble, you've found a gap in your knowledge!
+            </p>
           </div>
         </div>
 
@@ -297,7 +310,7 @@ export default function DashboardView({ navigate, user }: Props) {
 
         {/* Quick Actions */}
         <h2 className="text-xl font-bold mb-6">Quick Actions</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 md:gap-6 mb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-4 md:gap-6 mb-12">
           <button 
             onClick={() => navigate('focus')}
             className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
@@ -381,6 +394,17 @@ export default function DashboardView({ navigate, user }: Props) {
             </div>
             <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">Mock Exams</h3>
             <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Test your knowledge</p>
+          </button>
+
+          <button 
+            onClick={() => navigate('voice_tutor')}
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
+          >
+            <div className="bg-fuchsia-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-fuchsia-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+              <Mic className="w-6 h-6 md:w-8 md:h-8 text-fuchsia-400" />
+            </div>
+            <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">Voice Tutor</h3>
+            <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Practice with AI</p>
           </button>
 
           <button 

@@ -1,7 +1,7 @@
 import React, { ReactNode, useEffect, useState } from 'react';
 import { ViewName } from '../App';
 import { getCurrentUser, setCurrentUser, getTheme, setTheme } from '../store';
-import { BarChart2, UploadCloud, Layers, FileText, MessageSquare, Gem, LogOut, Menu, X, User, Presentation, CheckCircle2, Target, Brain, Clock, Calendar, Users, Sun, Moon, Flame, Mic } from 'lucide-react';
+import { BarChart2, UploadCloud, Layers, FileText, MessageSquare, Gem, LogOut, Menu, X, User, Presentation, CheckCircle2, Target, Brain, Clock, Calendar, Users, Sun, Moon, Flame, Mic, Maximize, Minimize } from 'lucide-react';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -83,7 +83,7 @@ export default function Layout({ navigate, children, activeView, hideSidebar = f
         }`}
         title={isFocusMode ? "Exit Focus Mode" : "Enter Focus Mode"}
       >
-        <Target className={`w-6 h-6 ${isFocusMode ? 'animate-pulse' : ''}`} />
+        {isFocusMode ? <Minimize className="w-6 h-6" /> : <Maximize className="w-6 h-6" />}
       </button>
 
       {/* Mobile Overlay */}

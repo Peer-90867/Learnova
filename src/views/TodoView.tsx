@@ -243,17 +243,35 @@ export default function TodoView({ navigate, user }: Props) {
           </div>
           
           {todos.length > 0 && (
-            <div className="w-full md:w-64 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl p-3">
-              <div className="flex justify-between text-xs font-bold mb-2">
-                <span className="text-gray-400">Progress</span>
-                <span className="text-emerald-400">{progress}%</span>
+            <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+              <div className="bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl p-3 flex-1">
+                <div className="flex justify-between text-xs font-bold mb-2">
+                  <span className="text-gray-400">Overall Progress</span>
+                  <span className="text-emerald-400">{progress}%</span>
+                </div>
+                <div className="w-full bg-[#0F0E17] rounded-full h-2">
+                  <div 
+                    className="bg-emerald-500 h-2 rounded-full transition-all duration-500" 
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
               </div>
-              <div className="w-full bg-[#0F0E17] rounded-full h-2">
-                <div 
-                  className="bg-emerald-500 h-2 rounded-full transition-all duration-500" 
-                  style={{ width: `${progress}%` }}
-                ></div>
-              </div>
+              {todos.filter(t => t.dueDate === new Date().toISOString().split('T')[0]).length > 0 && (
+                <div className="bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl p-3 flex-1">
+                  <div className="flex justify-between text-xs font-bold mb-2">
+                    <span className="text-gray-400">Today's Progress</span>
+                    <span className="text-indigo-400">
+                      {Math.round((todos.filter(t => t.dueDate === new Date().toISOString().split('T')[0] && t.completed).length / todos.filter(t => t.dueDate === new Date().toISOString().split('T')[0]).length) * 100)}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-[#0F0E17] rounded-full h-2">
+                    <div 
+                      className="bg-indigo-500 h-2 rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.round((todos.filter(t => t.dueDate === new Date().toISOString().split('T')[0] && t.completed).length / todos.filter(t => t.dueDate === new Date().toISOString().split('T')[0]).length) * 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

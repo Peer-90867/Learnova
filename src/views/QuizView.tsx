@@ -4,7 +4,8 @@ import Layout from '../components/Layout';
 import { getCurrentUser, getUploads, getCurrentDocumentId, addUsage, User, Quiz, QuizQuestion, setQuizzes, getQuizzes } from '../store';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, Type } from '@google/genai';
-import { Loader2, AlertCircle, CheckCircle2, XCircle, ChevronRight, RefreshCw, FileText, Target } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2, XCircle, ChevronRight, RefreshCw, FileText, Target, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -20,6 +21,8 @@ export default function QuizView({ navigate, user }: Props) {
   const [showExplanation, setShowExplanation] = useState(false);
   const [score, setScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
+  const [userAnswers, setUserAnswers] = useState<number[]>([]);
+  const [isReviewing, setIsReviewing] = useState(false);
   const [documentTitle, setDocumentTitle] = useState('Mock Exam');
   const [questionCount, setQuestionCount] = useState(5);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
@@ -55,7 +58,8 @@ export default function QuizView({ navigate, user }: Props) {
       Make the questions appropriate for the specified difficulty. 
       Easy: Basic recall and definitions. 
       Medium: Application of concepts and understanding relationships. 
-      Hard: Complex analysis, synthesis of information, and critical evaluation.`;
+      Hard: Complex analysis, synthesis of information, and critical evaluation.
+      The language of the quiz should be ${user.settings?.language || 'English'} and the tone should be ${user.settings?.tone || 'Academic'}.`;
 
       let contents: any = `${basePrompt}\n\nContent:\n${promptContent}`;
       
@@ -159,6 +163,12 @@ export default function QuizView({ navigate, user }: Props) {
       setScore(prev => prev + 1);
     }
     
+    setUserAnswers(prev => {
+      const newAnswers = [...prev];
+      newAnswers[currentQuestionIndex] = selectedOption;
+      return newAnswers;
+    });
+    
     setShowExplanation(true);
   };
 
@@ -178,6 +188,73 @@ export default function QuizView({ navigate, user }: Props) {
       );
       setQuizzes(updatedQuizzes);
     }
+  };
+
+  const startReview = () => {
+    setIsReviewing(true);
+    setCurrentQuestionIndex(0);
+    setQuizFinished(false);
+    setShowExplanation(true);
+    setSelectedOption(userAnswers[0]);
+  };
+
+  const handleNextReviewQuestion = () => {
+    if (!quiz) return;
+    if (currentQuestionIndex < quiz.questions.length - 1) {
+      const nextIndex = currentQuestionIndex + 1;
+      setCurrentQuestionIndex(nextIndex);
+      setSelectedOption(userAnswers[nextIndex]);
+    } else {
+      setIsReviewing(false);
+      setQuizFinished(true);
+    }
+  };
+
+  const handlePrevReviewQuestion = () => {
+    if (!quiz) return;
+    if (currentQuestionIndex > 0) {
+      const prevIndex = currentQuestionIndex - 1;
+      setCurrentQuestionIndex(prevIndex);
+      setSelectedOption(userAnswers[prevIndex]);
+    }
+  };
+
+  const exportToPDF = () => {
+    if (!quiz) return;
+    const doc = new jsPDF();
+    
+    doc.setFontSize(22);
+    doc.setTextColor(40, 40, 40);
+    doc.text(documentTitle, 20, 20);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(60, 60, 60);
+    
+    let y = 40;
+    quiz.questions.forEach((q, i) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      
+      const questionLines = doc.splitTextToSize(`${i + 1}. ${q.question}`, 170);
+      doc.text(questionLines, 20, y);
+      y += questionLines.length * 7 + 2;
+      
+      q.options.forEach((opt, j) => {
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
+        const optionLines = doc.splitTextToSize(`   ${String.fromCharCode(65 + j)}. ${opt}`, 170);
+        doc.text(optionLines, 20, y);
+        y += optionLines.length * 7;
+      });
+      
+      y += 10;
+    });
+    
+    doc.save(`${documentTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`);
   };
 
   if (!user) return null;
@@ -301,7 +378,7 @@ export default function QuizView({ navigate, user }: Props) {
 
             <div className="flex justify-between items-center mb-8">
               <span className="text-sm font-bold text-indigo-400 uppercase tracking-wider">
-                Question {currentQuestionIndex + 1} of {quiz.questions.length}
+                {isReviewing ? 'Reviewing ' : ''}Question {currentQuestionIndex + 1} of {quiz.questions.length}
               </span>
               <span className="text-sm font-medium text-gray-400">
                 Score: {score}
@@ -337,7 +414,7 @@ export default function QuizView({ navigate, user }: Props) {
                   <button
                     key={index}
                     onClick={() => handleOptionSelect(index)}
-                    disabled={showExplanation}
+                    disabled={showExplanation || isReviewing}
                     className={buttonClass}
                   >
                     <span className="flex-1">{option}</span>
@@ -363,8 +440,25 @@ export default function QuizView({ navigate, user }: Props) {
               )}
             </AnimatePresence>
 
-            <div className="flex justify-end">
-              {!showExplanation ? (
+            <div className="flex justify-end gap-4">
+              {isReviewing ? (
+                <>
+                  <button
+                    onClick={handlePrevReviewQuestion}
+                    disabled={currentQuestionIndex === 0}
+                    className="px-8 py-3 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] text-gray-300 hover:text-white rounded-xl font-bold transition-colors disabled:opacity-50 flex items-center"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={handleNextReviewQuestion}
+                    className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-indigo-500/20 flex items-center"
+                  >
+                    {currentQuestionIndex < quiz.questions.length - 1 ? 'Next' : 'Finish Review'}
+                    <ChevronRight className="w-5 h-5 ml-2" />
+                  </button>
+                </>
+              ) : !showExplanation ? (
                 <button
                   onClick={handleSubmitAnswer}
                   disabled={selectedOption === null}
@@ -397,7 +491,19 @@ export default function QuizView({ navigate, user }: Props) {
               You scored {score} out of {quiz.questions.length} correct.
             </p>
             
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4">
+              <button 
+                onClick={startReview}
+                className="px-8 py-3 bg-[#211F35] hover:bg-[#2A2845] text-white rounded-xl font-bold transition-colors border border-[rgba(124,58,237,0.2)] flex items-center justify-center"
+              >
+                <FileText className="w-5 h-5 mr-2" /> Review Answers
+              </button>
+              <button 
+                onClick={exportToPDF}
+                className="px-8 py-3 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-xl font-bold transition-colors border border-purple-500/30 flex items-center justify-center"
+              >
+                <Download className="w-5 h-5 mr-2" /> Export to PDF
+              </button>
               <button 
                 onClick={() => {
                   setShowConfig(true);

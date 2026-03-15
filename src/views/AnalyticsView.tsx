@@ -95,6 +95,48 @@ export default function AnalyticsView({ navigate, user }: Props) {
           ))}
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+          {/* Study Streak Heatmap */}
+          <div className="glass-card p-8 rounded-[2.5rem] border border-white/5 lg:col-span-3">
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+              <Calendar className="w-5 h-5 mr-3 text-amber-400" />
+              Study Streak & Activity Heatmap
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {[...Array(30)].map((_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - (29 - i));
+                const dateStr = d.toISOString().split('T')[0];
+                const dayUsage = usage.filter(u => u.date.startsWith(dateStr)).length;
+                
+                let intensityClass = 'bg-white/5';
+                if (dayUsage > 0 && dayUsage <= 2) intensityClass = 'bg-emerald-500/20';
+                else if (dayUsage > 2 && dayUsage <= 5) intensityClass = 'bg-emerald-500/50';
+                else if (dayUsage > 5) intensityClass = 'bg-emerald-500';
+
+                return (
+                  <div 
+                    key={i} 
+                    className={`w-8 h-8 rounded-lg ${intensityClass} border border-white/5 flex items-center justify-center group relative cursor-pointer transition-colors`}
+                  >
+                    <div className="absolute bottom-full mb-2 hidden group-hover:block bg-[#1A1830] border border-[rgba(124,58,237,0.2)] text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+                      {d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: {dayUsage} activities
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-4 flex items-center justify-end gap-2 text-xs text-gray-400">
+              <span>Less</span>
+              <div className="w-4 h-4 rounded bg-white/5"></div>
+              <div className="w-4 h-4 rounded bg-emerald-500/20"></div>
+              <div className="w-4 h-4 rounded bg-emerald-500/50"></div>
+              <div className="w-4 h-4 rounded bg-emerald-500"></div>
+              <span>More</span>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
           {/* Activity Chart */}
           <div className="glass-card p-8 rounded-[2.5rem] border border-white/5">

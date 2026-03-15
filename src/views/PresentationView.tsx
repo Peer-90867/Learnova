@@ -3,7 +3,7 @@ import { ViewName } from '../App';
 import Layout from '../components/Layout';
 import { getCurrentUser, getCurrentDocumentId, getUploads, addUsage, getPresentations, setPresentations, Presentation, Slide, User, getCache, setCache } from '../store';
 import { motion, AnimatePresence } from 'motion/react';
-import { Presentation as PresentationIcon, ChevronLeft, ChevronRight, Play, Download, Loader2, Image as ImageIcon, Sparkles, RefreshCw, UploadCloud, Plus, Copy, CheckCircle2, X, Share2, Save } from 'lucide-react';
+import { Presentation as PresentationIcon, ChevronLeft, ChevronRight, Play, Download, Loader2, Image as ImageIcon, Sparkles, RefreshCw, UploadCloud, Plus, Copy, CheckCircle2, X, Share2, Save, Trash2 } from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { jsPDF } from 'jspdf';
 
@@ -383,6 +383,30 @@ export default function PresentationView({ navigate, user }: Props) {
                 className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
               >
                 <Copy className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Duplicate
+              </button>
+              <button 
+                onClick={() => {
+                  if (!presentation || presentation.slides.length <= 1) return;
+                  if (confirm('Are you sure you want to delete this slide?')) {
+                    const updatedPresentation = { ...presentation };
+                    updatedPresentation.slides = presentation.slides.filter((_, i) => i !== currentSlide);
+                    
+                    const allPresentations = getPresentations();
+                    const index = allPresentations.findIndex(p => p.id === presentation.id);
+                    if (index !== -1) {
+                      allPresentations[index] = updatedPresentation;
+                      setPresentations(allPresentations);
+                    }
+                    
+                    setPresentation(updatedPresentation);
+                    if (currentSlide >= updatedPresentation.slides.length) {
+                      setCurrentSlide(updatedPresentation.slides.length - 1);
+                    }
+                  }
+                }}
+                className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 hover:border-red-500/40 transition-all shadow-sm"
+              >
+                <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Delete
               </button>
               <button 
                 onClick={() => {

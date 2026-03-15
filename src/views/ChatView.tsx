@@ -3,7 +3,7 @@ import { ViewName } from '../App';
 import Layout from '../components/Layout';
 import { getCurrentDocumentId, getUploads, setUploads, addUsage, User, Message, Upload } from '../store';
 import { motion, AnimatePresence } from 'motion/react';
-import { MessageSquare, Send, ChevronLeft, Loader2, Bot, User as UserIcon, Trash2, Sparkles, GraduationCap, Brain, Zap, Coffee, Book } from 'lucide-react';
+import { MessageSquare, Send, ChevronLeft, Loader2, Bot, User as UserIcon, Trash2, Sparkles, GraduationCap, Brain, Zap, Coffee, Book, Download } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import Markdown from 'react-markdown';
 
@@ -71,9 +71,19 @@ export default function ChatView({ navigate, user }: Props) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedPersona, setSelectedPersona] = useState<Persona>(PERSONAS[0]);
+  const [targetLanguage, setTargetLanguage] = useState('en');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [useWebSearch, setUseWebSearch] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const LANGUAGES = [
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Spanish' },
+    { code: 'fr', name: 'French' },
+    { code: 'de', name: 'German' },
+    { code: 'zh', name: 'Chinese' },
+    { code: 'ja', name: 'Japanese' },
+  ];
 
   useEffect(() => {
     if (!user || !docId) return;
@@ -130,7 +140,7 @@ export default function ChatView({ navigate, user }: Props) {
       
       const modelMessage: Message = { 
         role: 'model', 
-        content: response.text || "I'm sorry, I couldn't generate a response.",
+        content: await translateMessage(response.text || "I'm sorry, I couldn't generate a response.", targetLanguage),
         personaId: persona.id
       };
       const finalMessages = [...newMessages, modelMessage];
@@ -178,6 +188,22 @@ export default function ChatView({ navigate, user }: Props) {
     setShowClearConfirm(false);
   };
 
+  const translateMessage = async (text: string, targetLang: string) => {
+    if (targetLang === 'en') return text;
+    
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.generateContent({
+        model: "gemini-3.1-flash-preview",
+        contents: `Translate the following text to ${LANGUAGES.find(l => l.code === targetLang)?.name || targetLang}. Only return the translated text, nothing else.\n\nText: ${text}`,
+      });
+      return response.text || text;
+    } catch (error) {
+      console.error('Translation error:', error);
+      return text;
+    }
+  };
+
   if (!user || !upload) return null;
 
   return (
@@ -202,7 +228,7 @@ export default function ChatView({ navigate, user }: Props) {
           </div>
           
           <div className="flex items-center gap-2 w-full md:w-auto">
-            <button
+             <button
               onClick={() => setUseWebSearch(!useWebSearch)}
               className={`flex items-center px-3 py-2 rounded-xl border transition-all text-xs font-bold ${
                 useWebSearch 
@@ -214,6 +240,17 @@ export default function ChatView({ navigate, user }: Props) {
               <Sparkles className={`w-3.5 h-3.5 mr-1.5 ${useWebSearch ? 'animate-pulse' : ''}`} />
               Web Search
             </button>
+            <div className="flex-1 md:flex-none relative">
+              <select 
+                value={targetLanguage}
+                onChange={(e) => setTargetLanguage(e.target.value)}
+                className="w-full md:w-auto bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors appearance-none pr-10"
+              >
+                {LANGUAGES.map(lang => (
+                  <option key={lang.code} value={lang.code}>{lang.name}</option>
+                ))}
+              </select>
+            </div>
             <div className="flex-1 md:flex-none relative">
               <select 
                 value={selectedPersona.id}
@@ -231,6 +268,22 @@ export default function ChatView({ navigate, user }: Props) {
                 <Sparkles className="w-4 h-4" />
               </div>
             </div>
+            <button 
+              onClick={() => {
+                const chatText = messages.map(m => `${m.role === 'user' ? 'You' : 'AI'}: ${m.content}`).join('\n\n');
+                const blob = new Blob([chatText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${upload.filename.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_chat.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="p-2 text-gray-500 hover:text-indigo-400 transition-colors"
+              title="Export Chat"
+            >
+              <Download className="w-5 h-5" />
+            </button>
             <button 
               onClick={confirmClearChat}
               className="p-2 text-gray-500 hover:text-red-400 transition-colors"
@@ -295,11 +348,43 @@ export default function ChatView({ navigate, user }: Props) {
                     <div className={`p-4 rounded-2xl text-sm leading-relaxed ${
                       msg.role === 'user' 
                         ? 'bg-indigo-600 text-white rounded-tr-none' 
-                        : 'bg-[#1A1830] border border-[rgba(124,58,237,0.1)] text-gray-200 rounded-tl-none'
+                        : 'bg-[#1A1830] border border-[rgba(124,58,237,0.1)] text-gray-200 rounded-tl-none group relative'
                     }`}>
                       <div className="markdown-body">
                         <Markdown>{msg.content}</Markdown>
                       </div>
+                      {msg.role === 'model' && (
+                        <div className="absolute -bottom-3 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-[#211F35] border border-[rgba(124,58,237,0.2)] rounded-lg p-1 shadow-lg">
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(msg.content);
+                              // Could add a toast here
+                            }}
+                            className="p-1 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors"
+                            title="Copy message"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                          </button>
+                          {i === messages.length - 1 && (
+                            <button
+                              onClick={() => {
+                                const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+                                if (lastUserMessage) {
+                                  // Remove the last AI message
+                                  setMessages(messages.slice(0, -1));
+                                  setInput(lastUserMessage.content);
+                                  // We don't auto-send here to let user edit, or we could auto-send.
+                                  // Let's just populate the input.
+                                }
+                              }}
+                              className="p-1 text-gray-400 hover:text-indigo-400 hover:bg-white/10 rounded transition-colors"
+                              title="Regenerate response"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </motion.div>
