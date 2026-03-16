@@ -411,18 +411,20 @@ export default function NotesView({ navigate, user }: Props) {
               <Layers className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Gen Flashcards
             </button>
             <button 
-              onClick={() => {
+              onClick={async () => {
                 const shareData = {
                   title: documentTitle,
                   text: `Check out these study notes: ${documentTitle}`,
                   url: window.location.href,
                 };
                 if (navigator.share) {
-                  navigator.share(shareData).catch((err) => {
+                  try {
+                    await navigator.share(shareData);
+                  } catch (err: any) {
                     if (err.name !== 'AbortError') {
-                      console.error(err);
+                      console.error('Share failed:', err);
                     }
-                  });
+                  }
                 } else {
                   navigator.clipboard.writeText(window.location.href);
                   alert('Link copied to clipboard!');

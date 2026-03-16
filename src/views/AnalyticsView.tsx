@@ -12,10 +12,10 @@ interface Props {
 }
 
 export default function AnalyticsView({ navigate, user }: Props) {
-  const usage = getUsage().filter(u => u.userId === user?.id);
-  const quizzes = getQuizzes().filter(q => q.userId === user?.id);
-  const focusSessions = getFocusSessions().filter(s => s.userId === user?.id);
-  const decks = getDecks().filter(d => d.userId === user?.id);
+  const usage = (getUsage() || []).filter(u => u.userId === user?.id);
+  const quizzes = (getQuizzes() || []).filter(q => q.userId === user?.id);
+  const focusSessions = (getFocusSessions() || []).filter(s => s.userId === user?.id);
+  const decks = (getDecks() || []).filter(d => d.userId === user?.id);
 
   // Process data for charts
   const activityData = useMemo(() => {
@@ -77,7 +77,7 @@ export default function AnalyticsView({ navigate, user }: Props) {
             { label: 'Total Study Time', value: `${focusSessions.length * 25}m`, icon: Clock, color: 'indigo' },
             { label: 'Quizzes Taken', value: quizzes.length, icon: Target, color: 'emerald' },
             { label: 'Flashcards Mastered', value: decks.reduce((acc, d) => acc + d.cards.length, 0), icon: Brain, color: 'blue' },
-            { label: 'Achievements', value: `${user.achievements.filter(a => a.unlockedAt).length}/${user.achievements.length}`, icon: Award, color: 'amber' }
+            { label: 'Achievements', value: `${(user.achievements || []).filter(a => a.unlockedAt).length}/${(user.achievements || []).length}`, icon: Award, color: 'amber' }
           ].map((stat, i) => (
             <motion.div 
               key={i}

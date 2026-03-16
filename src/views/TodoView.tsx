@@ -32,7 +32,7 @@ export default function TodoView({ navigate, user }: Props) {
 
   useEffect(() => {
     if (!user) return;
-    setTodoState(getTodos().filter(t => t.userId === user.id));
+    setTodoState((getTodos() || []).filter(t => t.userId === user.id));
   }, [user]);
 
   const saveTodos = (newTodos: Todo[]) => {

@@ -47,7 +47,7 @@ export default function DashboardView({ navigate, user }: Props) {
 
   if (!user) return null;
 
-  const usage = getUsage().filter(u => u.userId === user.id);
+  const usage = (getUsage() || []).filter(u => u.userId === user.id);
   
   const calculateTrend = (type: 'flashcard' | 'note' | 'chat' | 'doc') => {
     const now = new Date();
@@ -196,9 +196,9 @@ export default function DashboardView({ navigate, user }: Props) {
             <div className="glass-card p-6 rounded-2xl hover-glow">
               <div className="text-gray-400 text-sm mb-2 flex items-center justify-between">
                 <span className="flex items-center"><Trophy className="w-4 h-4 mr-2 text-amber-400" /> Achievements</span>
-                <div className="text-xs font-bold text-amber-400">{user.achievements.filter(a => a.unlockedAt).length} / {user.achievements.length}</div>
+                <div className="text-xs font-bold text-amber-400">{(user.achievements || []).filter(a => a.unlockedAt).length} / {(user.achievements || []).length}</div>
               </div>
-              <div className="text-3xl font-bold text-white">{user.achievements.filter(a => a.unlockedAt).length}</div>
+              <div className="text-3xl font-bold text-white">{(user.achievements || []).filter(a => a.unlockedAt).length}</div>
             </div>
           </div>
 

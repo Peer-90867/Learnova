@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { ViewName } from '../App';
 import { motion } from 'motion/react';
-import { getUsers, setUsers, setCurrentUser, User } from '../store';
 import { CheckCircle2 } from 'lucide-react';
 import Logo from '../components/Logo';
+import { supabase } from '../lib/supabase';
+import { useToast } from '../components/Toast';
+import { User, INITIAL_ACHIEVEMENTS, setCurrentUser } from '../store';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -13,13 +15,13 @@ export default function AuthView({ navigate }: Props) {
   const [isLogin, setIsLogin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { showToast } = useToast();
 
   // Form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [university, setUniversity] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -53,46 +55,46 @@ export default function AuthView({ navigate }: Props) {
     setLoading(true);
 
     try {
-      const users = getUsers();
-
       if (isLogin) {
-        const user = users.find(u => u.email === email && u.password === btoa(password));
+        const { data: { user }, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
         if (user) {
-          setCurrentUser(user);
-          navigate('dashboard');
-        } else {
-          setError('Invalid email or password');
+          const hashString = (str: string) => {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+              hash = ((hash << 5) - hash) + str.charCodeAt(i);
+              hash |= 0;
+            }
+            return Math.abs(hash);
+          };
+          const localUser: User = {
+            id: hashString(user.id),
+            name: user.user_metadata.name || 'User',
+            email: user.email || '',
+            plan: 'free',
+            subscriptionStatus: 'none',
+            uploadsUsed: 0,
+            createdAt: user.created_at,
+            achievements: INITIAL_ACHIEVEMENTS,
+          };
+          setCurrentUser(localUser);
         }
-      } else {
-        if (password !== confirmPassword) {
-          setError('Passwords do not match');
-          setLoading(false);
-          return;
-        }
-        if (users.some(u => u.email === email)) {
-          setError('Email already exists');
-          setLoading(false);
-          return;
-        }
-
-        const newUser: User = {
-          id: Date.now(),
-          name,
-          email,
-          password: btoa(password),
-          plan: 'free',
-          subscriptionStatus: 'none',
-          uploadsUsed: 0,
-          createdAt: new Date().toISOString(),
-          achievements: []
-        };
-
-        setUsers([...users, newUser]);
-        setCurrentUser(newUser);
+        window.dispatchEvent(new Event('user-updated'));
+        showToast(`Welcome back, ${email}!`, 'success');
         navigate('dashboard');
+      } else {
+        const { error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: { data: { name } }
+        });
+        if (error) throw error;
+        showToast('Account created successfully! Please check your email to verify.', 'success');
+        setIsLogin(true);
       }
-    } catch (err) {
-      setError('An error occurred. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred. Please try again.');
+      showToast(err.message || 'An error occurred.', 'error');
     } finally {
       setLoading(false);
     }
@@ -215,7 +217,7 @@ export default function AuthView({ navigate }: Props) {
                     />
                     {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword}</p>}
                   </div>
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">University (optional)</label>
                     <input 
                       type="text" 
@@ -224,7 +226,7 @@ export default function AuthView({ navigate }: Props) {
                       className="w-full bg-[#0F0E17] border border-[rgba(124,58,237,0.2)] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
                       placeholder="IIT Delhi"
                     />
-                  </div>
+                  </div> */}
                 </>
               )}
 

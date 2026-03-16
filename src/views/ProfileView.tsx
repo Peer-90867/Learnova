@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { ViewName } from '../App';
 import Layout from '../components/Layout';
-import { getCurrentUser, setCurrentUser, getUsers, setUsers, User } from '../store';
 import { motion } from 'motion/react';
 import { User as UserIcon, Save, AlertCircle, CheckCircle2, Moon, Sun, Folder } from 'lucide-react';
+import { getCurrentUser, setCurrentUser, getUsers, setUsers, User } from '../store';
+import { supabase } from '../lib/supabase';
+import { useToast } from '../components/Toast';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -21,6 +23,7 @@ export default function ProfileView({ navigate, user }: Props) {
   const [success, setSuccess] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [theme, setTheme] = useState(user?.settings?.theme || 'light');
+  const { showToast } = useToast();
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -46,6 +49,16 @@ export default function ProfileView({ navigate, user }: Props) {
         users[userIndex] = updatedUser;
         setUsers(users);
       }
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      showToast('Logged out successfully', 'success');
+      navigate('landing');
+    } catch (err) {
+      showToast('Failed to logout', 'error');
     }
   };
 
@@ -159,14 +172,6 @@ export default function ProfileView({ navigate, user }: Props) {
             </button>
           </div>
 
-          <button 
-            onClick={() => navigate('study_sets')}
-            className="w-full mb-8 p-4 bg-indigo-600 rounded-xl flex items-center justify-between hover:bg-indigo-700 transition-colors"
-          >
-            <span className="font-medium">Manage Study Sets</span>
-            <Folder className="w-5 h-5" />
-          </button>
-
           <form onSubmit={handleUpdate} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">Name</label>
@@ -269,10 +274,7 @@ export default function ProfileView({ navigate, user }: Props) {
             </button>
             <button
               type="button"
-              onClick={() => {
-                setCurrentUser(null);
-                navigate('landing');
-              }}
+              onClick={handleLogout}
               className="w-full bg-red-500/10 text-red-400 py-3 rounded-xl font-bold hover:bg-red-500/20 transition-colors flex items-center justify-center"
             >
               Logout

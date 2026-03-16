@@ -22,7 +22,7 @@ export default function PlannerView({ navigate, user }: Props) {
 
   useEffect(() => {
     if (user) {
-      setTasks(getPlannedTasks().filter(t => t.userId === user.id));
+      setTasks((getPlannedTasks() || []).filter(t => t.userId === user.id));
     }
   }, [user]);
 

@@ -71,18 +71,19 @@ export default function ChatView({ navigate, user }: Props) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedPersona, setSelectedPersona] = useState<Persona>(PERSONAS[0]);
-  const [targetLanguage, setTargetLanguage] = useState('en');
+  const [targetLanguage, setTargetLanguage] = useState(user?.settings?.language || 'English');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [useWebSearch, setUseWebSearch] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const LANGUAGES = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Spanish' },
-    { code: 'fr', name: 'French' },
-    { code: 'de', name: 'German' },
-    { code: 'zh', name: 'Chinese' },
-    { code: 'ja', name: 'Japanese' },
+    { code: 'English', name: 'English' },
+    { code: 'Spanish', name: 'Spanish' },
+    { code: 'French', name: 'French' },
+    { code: 'German', name: 'German' },
+    { code: 'Chinese', name: 'Chinese' },
+    { code: 'Japanese', name: 'Japanese' },
+    { code: 'Korean', name: 'Korean' },
   ];
 
   useEffect(() => {
@@ -120,10 +121,13 @@ export default function ChatView({ navigate, user }: Props) {
       }
 
       const persona = selectedPersona;
-      const chat = ai.chats.create({
+      const tone = user.settings?.tone || 'Academic';
+      const response = await ai.models.generateContentStream({
         model: "gemini-3-flash-preview",
         config: {
           systemInstruction: `${persona.instruction}
+          
+          IMPORTANT: Your response MUST be in ${targetLanguage}. Your tone should be ${tone}.
           
           If the answer is not in the document, say so politely but try to provide general knowledge if relevant.
           ${useWebSearch ? 'You have access to Google Search. Use it to find the latest information or alternative explanations if the document is insufficient.' : ''}
@@ -132,18 +136,28 @@ export default function ChatView({ navigate, user }: Props) {
           ${docContent}`,
           tools: useWebSearch ? [{ googleSearch: {} }] : undefined,
         },
+        contents: [{ role: 'user', parts: [{ text: input }] }]
       });
 
-      // Convert history to Gemini format if needed, but for now we just send the new message
-      // with the system instruction containing the full context.
-      const response = await chat.sendMessage({ message: input });
-      
+      let fullResponse = '';
       const modelMessage: Message = { 
         role: 'model', 
-        content: await translateMessage(response.text || "I'm sorry, I couldn't generate a response.", targetLanguage),
+        content: '',
         personaId: persona.id
       };
-      const finalMessages = [...newMessages, modelMessage];
+      
+      setMessages(prev => [...prev, modelMessage]);
+
+      for await (const chunk of response) {
+        fullResponse += chunk.text;
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1].content = fullResponse;
+          return updated;
+        });
+      }
+      
+      const finalMessages = [...newMessages, { ...modelMessage, content: fullResponse }];
       
       setMessages(finalMessages);
       
@@ -186,22 +200,6 @@ export default function ChatView({ navigate, user }: Props) {
 
   const cancelClearChat = () => {
     setShowClearConfirm(false);
-  };
-
-  const translateMessage = async (text: string, targetLang: string) => {
-    if (targetLang === 'en') return text;
-    
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-3.1-flash-preview",
-        contents: `Translate the following text to ${LANGUAGES.find(l => l.code === targetLang)?.name || targetLang}. Only return the translated text, nothing else.\n\nText: ${text}`,
-      });
-      return response.text || text;
-    } catch (error) {
-      console.error('Translation error:', error);
-      return text;
-    }
   };
 
   if (!user || !upload) return null;

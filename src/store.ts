@@ -194,8 +194,12 @@ export interface Subscription {
 export const getStore = <T>(key: string, defaultValue: T): T => {
   try {
     const val = localStorage.getItem(key);
-    return val ? JSON.parse(val) : defaultValue;
-  } catch {
+    if (!val) return defaultValue;
+    const parsed = JSON.parse(val);
+    if (parsed === undefined || parsed === null) return defaultValue;
+    return parsed;
+  } catch (e) {
+    console.error(`Error parsing store for key ${key}:`, e);
     return defaultValue;
   }
 };
@@ -220,7 +224,23 @@ export const setCache = <T>(key: string, value: T) => {
 export const setStore = <T>(key: string, value: T) => {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
+  } catch (e: any) {
+    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+      console.warn('LocalStorage quota exceeded, attempting to clear old presentations...');
+      try {
+        const presentations = getPresentations();
+        if (presentations.length > 1) {
+          // Remove the oldest half of presentations
+          const keptPresentations = presentations.slice(Math.floor(presentations.length / 2));
+          localStorage.setItem('sf_presentations', JSON.stringify(keptPresentations));
+          // Try saving the original request again
+          localStorage.setItem(key, JSON.stringify(value));
+          return;
+        }
+      } catch (retryError) {
+        console.error('Failed to clear space in localStorage', retryError);
+      }
+    }
     console.error('Failed to save to localStorage', e);
   }
 };

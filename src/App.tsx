@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { ToastProvider } from './components/Toast';
 import LandingView from './views/LandingView';
 import AuthView from './views/AuthView';
 import DashboardView from './views/DashboardView';
@@ -11,7 +12,6 @@ import PaymentPendingView from './views/PaymentPendingView';
 import AdminLoginView from './views/AdminLoginView';
 import AdminPanelView from './views/AdminPanelView';
 import ProfileView from './views/ProfileView';
-import StudySetsView from './views/StudySetsView';
 import ActivityView from './views/ActivityView';
 import PresentationView from './views/PresentationView';
 import ChatView from './views/ChatView';
@@ -23,19 +23,30 @@ import AnalyticsView from './views/AnalyticsView';
 import PlannerView from './views/PlannerView';
 import GroupsView from './views/GroupsView';
 import VoiceTutorView from './views/VoiceTutorView';
-import { getCurrentUser, isAdmin } from './store';
+import { getCurrentUser, isAdmin, setCurrentUser } from './store';
+import { supabase } from './lib/supabase';
 
-export type ViewName = 'landing' | 'auth' | 'dashboard' | 'upload' | 'flashcards' | 'notes' | 'pricing' | 'payment_pending' | 'admin_login' | 'admin_panel' | 'profile' | 'study_sets' | 'activity' | 'presentation' | 'chat' | 'todos' | 'quiz' | 'mindmap' | 'focus' | 'analytics' | 'planner' | 'groups' | 'voice_tutor';
+export type ViewName = 'landing' | 'auth' | 'dashboard' | 'upload' | 'flashcards' | 'notes' | 'pricing' | 'payment_pending' | 'admin_login' | 'admin_panel' | 'profile' | 'activity' | 'presentation' | 'chat' | 'todos' | 'quiz' | 'mindmap' | 'focus' | 'analytics' | 'planner' | 'groups' | 'voice_tutor';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewName>('landing');
   const [user, setUser] = useState(getCurrentUser());
 
   useEffect(() => {
-    // Check auth on load
-    if (user && currentView === 'landing') {
-      setCurrentView('dashboard');
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        setUser(null);
+        setCurrentUser(null);
+      }
+    });
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        setUser(null);
+        setCurrentUser(null);
+      }
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   // Listen for storage changes (for theme/user updates)
@@ -70,7 +81,6 @@ export default function App() {
       case 'admin_login': return <AdminLoginView navigate={navigate} />;
       case 'admin_panel': return <AdminPanelView navigate={navigate} />;
       case 'profile': return <ProfileView navigate={navigate} user={user} />;
-      case 'study_sets': return <StudySetsView navigate={navigate} user={user} />;
       case 'activity': return <ActivityView navigate={navigate} user={user} />;
       case 'presentation': return <PresentationView navigate={navigate} user={user} />;
       case 'chat': return <ChatView navigate={navigate} user={user} />;
@@ -87,33 +97,35 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen relative overflow-hidden ${user?.settings?.theme === 'light' ? 'light' : ''}`}>
-      {/* Background Orbs */}
-      <div className="orb orb-1"></div>
-      <div className="orb orb-2"></div>
+    <ToastProvider>
+      <div className={`min-h-screen relative overflow-hidden ${user?.settings?.theme === 'light' ? 'light' : ''}`}>
+        {/* Background Orbs */}
+        <div className="orb orb-1"></div>
+        <div className="orb orb-2"></div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentView}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2 }}
-          className="min-h-screen"
-        >
-          {renderView()}
-        </motion.div>
-      </AnimatePresence>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentView}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="min-h-screen"
+          >
+            {renderView()}
+          </motion.div>
+        </AnimatePresence>
 
-      {/* Admin Link */}
-      {!getCurrentUser() && currentView !== 'admin_panel' && currentView !== 'admin_login' && (
-        <button
-          onClick={() => navigate(isAdmin() ? 'admin_panel' : 'admin_login')}
-          className="fixed bottom-4 right-4 text-xs text-gray-500 hover:text-white transition-colors z-50"
-        >
-          Admin &rarr;
-        </button>
-      )}
-    </div>
+        {/* Admin Link */}
+        {!getCurrentUser() && currentView !== 'admin_panel' && currentView !== 'admin_login' && (
+          <button
+            onClick={() => navigate(isAdmin() ? 'admin_panel' : 'admin_login')}
+            className="fixed bottom-4 right-4 text-xs text-gray-500 hover:text-white transition-colors z-50"
+          >
+            Admin &rarr;
+          </button>
+        )}
+      </div>
+    </ToastProvider>
   );
 }
