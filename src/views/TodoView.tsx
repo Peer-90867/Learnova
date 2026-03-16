@@ -101,7 +101,7 @@ export default function TodoView({ navigate, user }: Props) {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: 'gemini-3-flash-preview',
         contents: `Break down the study topic "${newTodo}" into 3 to 5 actionable study tasks.`,
         config: {
           responseMimeType: "application/json",

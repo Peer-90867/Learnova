@@ -43,7 +43,7 @@ export default function FlashcardsView({ navigate, user }: Props) {
       }
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: 'gemini-3-flash-preview',
         contents: `Summarize the following flashcard deck in a brief paragraph:\n\n${deckContent}`
       });
       setSummary(response.text || 'No summary available.');
@@ -120,7 +120,7 @@ export default function FlashcardsView({ navigate, user }: Props) {
       }
       
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: 'gemini-3-flash-preview',
         contents: contents,
         config: {
           responseMimeType: 'application/json',

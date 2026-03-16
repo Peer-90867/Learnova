@@ -57,7 +57,7 @@ export default function PresentationView({ navigate, user }: Props) {
 
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
+        model: "gemini-3-flash-preview",
         contents: `Create a comprehensive, professional presentation based on the following content. 
         The presentation should have at least 6-10 slides depending on the depth of the content.
         Each slide should have a clear, engaging title and 3-5 concise, impactful bullet points.
@@ -359,30 +359,30 @@ export default function PresentationView({ navigate, user }: Props) {
           </div>
 
           {presentation && (
-            <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto justify-start md:justify-end mt-4 md:mt-0">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3 w-full mt-6">
               <button 
                 onClick={() => navigate('upload')}
-                className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+                className="flex items-center justify-center px-3 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
               >
-                <UploadCloud className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Upload Another
+                <UploadCloud className="w-4 h-4 mr-2" /> Upload Another
               </button>
               <button 
                 onClick={() => generatePresentation()}
-                className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+                className="flex items-center justify-center px-3 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
               >
-                <RefreshCw className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Regenerate
+                <RefreshCw className="w-4 h-4 mr-2" /> Regenerate
               </button>
               <button 
                 onClick={() => setShowAddSlideModal(true)}
-                className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+                className="flex items-center justify-center px-3 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
               >
-                <Plus className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Add Slide
+                <Plus className="w-4 h-4 mr-2" /> Add Slide
               </button>
               <button 
                 onClick={handleDuplicateSlide}
-                className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+                className="flex items-center justify-center px-3 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
               >
-                <Copy className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Duplicate
+                <Copy className="w-4 h-4 mr-2" /> Duplicate
               </button>
               <button 
                 onClick={() => {
@@ -404,9 +404,9 @@ export default function PresentationView({ navigate, user }: Props) {
                     }
                   }
                 }}
-                className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 hover:border-red-500/40 transition-all shadow-sm"
+                className="flex items-center justify-center px-3 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 hover:border-red-500/40 transition-all shadow-sm"
               >
-                <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Delete
+                <Trash2 className="w-4 h-4 mr-2" /> Delete
               </button>
               <button 
                 onClick={() => {
@@ -420,16 +420,16 @@ export default function PresentationView({ navigate, user }: Props) {
                     }
                   }
                 }}
-                className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+                className="flex items-center justify-center px-3 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
               >
-                <Save className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Save
+                <Save className="w-4 h-4 mr-2" /> Save
               </button>
               <button 
                 onClick={() => {
                   if (navigator.share) {
                     navigator.share({
                       title: presentation.title,
-                      text: 'Check out this presentation generated by CramLab!',
+                      text: 'Check out this presentation generated by Learnova!',
                       url: window.location.href,
                     }).catch(console.error);
                   } else {
@@ -437,33 +437,33 @@ export default function PresentationView({ navigate, user }: Props) {
                     alert('Link copied to clipboard!');
                   }
                 }}
-                className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+                className="flex items-center justify-center px-3 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
               >
-                <Share2 className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Share
+                <Share2 className="w-4 h-4 mr-2" /> Share
               </button>
               <button 
                 onClick={() => generateSlideImage(currentSlide)}
                 disabled={generatingImages[currentSlide]}
-                className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-indigo-600/10 border border-indigo-500/30 rounded-xl text-xs md:text-sm font-medium text-indigo-400 hover:bg-indigo-600/20 hover:border-indigo-500/50 transition-all disabled:opacity-50 shadow-sm"
+                className="flex items-center justify-center px-3 py-2.5 bg-indigo-600/10 border border-indigo-500/30 rounded-xl text-xs md:text-sm font-medium text-indigo-400 hover:bg-indigo-600/20 hover:border-indigo-500/50 transition-all disabled:opacity-50 shadow-sm"
               >
                 {generatingImages[currentSlide] ? (
-                  <Loader2 className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 animate-spin" />
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
-                  <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" />
+                  <Sparkles className="w-4 h-4 mr-2" />
                 )}
                 Generate Visual
               </button>
               <button 
                 onClick={() => setIsPresenting(true)}
-                className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-indigo-600 rounded-xl text-xs md:text-sm font-bold text-white hover:bg-indigo-500 transition-all shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5"
+                className="flex items-center justify-center px-3 py-2.5 bg-indigo-600 rounded-xl text-xs md:text-sm font-bold text-white hover:bg-indigo-500 transition-all shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5"
               >
-                <Play className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Present
+                <Play className="w-4 h-4 mr-2" /> Present
               </button>
               <button 
                 onClick={exportToPDF}
-                className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-indigo-600 rounded-xl text-xs md:text-sm font-bold text-white hover:bg-indigo-500 transition-all shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5"
+                className="flex items-center justify-center px-3 py-2.5 bg-indigo-600 rounded-xl text-xs md:text-sm font-bold text-white hover:bg-indigo-500 transition-all shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5"
               >
-                <Download className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Export PDF
+                <Download className="w-4 h-4 mr-2" /> Export PDF
               </button>
             </div>
           )}
@@ -873,7 +873,7 @@ export default function PresentationView({ navigate, user }: Props) {
                 </div>
 
                 <div className="hidden lg:block order-3 text-white/40 text-[10px] font-medium tracking-widest uppercase">
-                  CramLab Presentation Mode
+                  Learnova Presentation Mode
                 </div>
               </div>
             </motion.div>

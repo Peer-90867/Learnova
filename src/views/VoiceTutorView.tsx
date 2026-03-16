@@ -3,7 +3,7 @@ import { ViewName } from '../App';
 import Layout from '../components/Layout';
 import { getCurrentUser, User } from '../store';
 import { GoogleGenAI, Modality, LiveServerMessage } from "@google/genai";
-import { Mic, MicOff, Volume2, VolumeX, Loader2, Brain, X, Headphones, Sparkles, Settings2, MessageSquareText } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Loader2, Brain, X, Headphones, Sparkles, Settings2, MessageSquareText, GraduationCap, Lightbulb, ShieldAlert, Baby, Languages, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Props {
@@ -20,10 +20,10 @@ const VOICES = [
 ];
 
 const PERSONAS = [
-  { id: 'tutor', name: 'Friendly Tutor', prompt: 'You are a helpful and encouraging AI Study Tutor. Your goal is to help the student understand complex topics through conversation. Be concise, friendly, and ask guiding questions.' },
-  { id: 'socratic', name: 'Socratic Method', prompt: 'You are a Socratic tutor. Never give direct answers. Instead, ask probing questions that guide the student to discover the answer themselves.' },
-  { id: 'examiner', name: 'Strict Examiner', prompt: 'You are a strict examiner conducting an oral exam. Ask difficult questions, evaluate the answers critically, and point out any flaws in reasoning.' },
-  { id: 'eli5', name: 'Explain Like I\'m 5', prompt: 'You are an expert at explaining complex concepts simply. Use analogies, simple language, and avoid jargon. Assume the user has no prior knowledge.' },
+  { id: 'tutor', name: 'Friendly Tutor', icon: GraduationCap, color: 'text-indigo-400', prompt: 'You are a helpful and encouraging AI Study Tutor. Your goal is to help the student understand complex topics through conversation. Be concise, friendly, and ask guiding questions.' },
+  { id: 'socratic', name: 'Socratic Method', icon: Lightbulb, color: 'text-amber-400', prompt: 'You are a Socratic tutor. Never give direct answers. Instead, ask probing questions that guide the student to discover the answer themselves.' },
+  { id: 'examiner', name: 'Strict Examiner', icon: ShieldAlert, color: 'text-red-400', prompt: 'You are a strict examiner conducting an oral exam. Ask difficult questions, evaluate the answers critically, and point out any flaws in reasoning.' },
+  { id: 'eli5', name: 'Explain Like I\'m 5', icon: Baby, color: 'text-emerald-400', prompt: 'You are an expert at explaining complex concepts simply. Use analogies, simple language, and avoid jargon. Assume the user has no prior knowledge.' },
 ];
 
 export default function VoiceTutorView({ navigate, user }: Props) {
@@ -260,78 +260,80 @@ export default function VoiceTutorView({ navigate, user }: Props) {
               </p>
             </motion.div>
 
-            <div className="glass-card rounded-[3rem] p-8 md:p-12 mb-8 relative overflow-hidden w-full max-w-md mx-auto">
+            <div className="glass-card rounded-[3rem] p-8 md:p-12 mb-8 relative overflow-hidden w-full max-w-md mx-auto border border-white/10 shadow-2xl">
               <AnimatePresence mode="wait">
                 {!isConnected ? (
                   <motion.div
                     key="start"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.1 }}
                     className="flex flex-col items-center"
                   >
                     <button
                       onClick={startSession}
                       disabled={isConnecting}
-                      className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center transition-all shadow-xl shadow-indigo-500/40 group relative"
+                      className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center transition-all shadow-2xl shadow-indigo-500/40 group relative"
                     >
                       {isConnecting ? (
-                        <Loader2 className="w-10 h-10 md:w-12 md:h-12 text-white animate-spin" />
+                        <Loader2 className="w-12 h-12 md:w-16 md:h-16 text-white animate-spin" />
                       ) : (
-                        <Mic className="w-10 h-10 md:w-12 md:h-12 text-white group-hover:scale-110 transition-transform" />
+                        <Mic className="w-12 h-12 md:w-16 md:h-16 text-white group-hover:scale-110 transition-transform" />
                       )}
                       <div className="absolute inset-0 rounded-full border-4 border-indigo-400/30 animate-ping" />
+                      <div className="absolute -inset-4 rounded-full border border-indigo-500/10 animate-pulse" />
                     </button>
-                    <p className="mt-8 text-indigo-400 font-bold uppercase tracking-widest text-xs md:text-sm">
-                      {isConnecting ? 'Connecting to AI...' : 'Tap to Start Session'}
+                    <p className="mt-10 text-indigo-400 font-black uppercase tracking-[0.3em] text-[10px] md:text-xs">
+                      {isConnecting ? 'Establishing Neural Link...' : 'Tap to Start Learning'}
                     </p>
                   </motion.div>
                 ) : (
                   <motion.div
                     key="active"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.1 }}
                     className="flex flex-col items-center"
                   >
                     {/* Visualizer */}
-                    <div className="flex items-center justify-center gap-1 h-24 mb-12">
-                      {[...Array(12)].map((_, i) => (
+                    <div className="flex items-center justify-center gap-1.5 h-32 mb-12">
+                      {[...Array(24)].map((_, i) => (
                         <motion.div
                           key={i}
                           animate={{
-                            height: isSpeaking ? [20, 80, 20] : [10, 20, 10],
+                            height: isSpeaking ? [15, Math.random() * 80 + 20, 15] : [5, 15, 5],
+                            opacity: isSpeaking ? [0.5, 1, 0.5] : 0.3,
                           }}
                           transition={{
-                            duration: 0.5,
+                            duration: 0.4,
                             repeat: Infinity,
-                            delay: i * 0.05,
+                            delay: i * 0.02,
                           }}
-                          className={`w-2 rounded-full ${isSpeaking ? 'bg-indigo-400' : 'bg-gray-600'}`}
+                          className={`w-1.5 rounded-full ${isSpeaking ? 'bg-gradient-to-t from-indigo-600 to-purple-400' : 'bg-gray-600'}`}
                         />
                       ))}
                     </div>
 
-                    <div className="flex gap-4 md:gap-6">
+                    <div className="flex gap-6 md:gap-8">
                       <button
                         onClick={() => setIsMuted(!isMuted)}
-                        className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center transition-all ${
-                          isMuted ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                        className={`w-16 h-16 md:w-20 md:h-20 rounded-3xl flex items-center justify-center transition-all ${
+                          isMuted ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
                         }`}
                       >
-                        {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+                        {isMuted ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
                       </button>
                       <button
                         onClick={stopSession}
-                        className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-red-600 hover:bg-red-500 text-white flex items-center justify-center transition-all shadow-lg shadow-red-500/20"
+                        className="w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-red-600 hover:bg-red-500 text-white flex items-center justify-center transition-all shadow-2xl shadow-red-500/30 group"
                       >
-                        <X className="w-6 h-6" />
+                        <X className="w-8 h-8 group-hover:rotate-90 transition-transform" />
                       </button>
                     </div>
 
-                    <div className="mt-8 flex items-center text-xs md:text-sm font-bold text-emerald-400">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse" />
-                      Live Connection Active
+                    <div className="mt-10 flex items-center text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-emerald-400">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full mr-3 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                      Neural Link Active
                     </div>
                   </motion.div>
                 )}
@@ -395,22 +397,28 @@ export default function VoiceTutorView({ navigate, user }: Props) {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-400 mb-2">Persona</label>
+                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Persona</label>
                       <div className="grid grid-cols-1 gap-2">
-                        {PERSONAS.map(persona => (
-                          <button
-                            key={persona.id}
-                            onClick={() => setSelectedPersona(persona.id)}
-                            disabled={isConnected}
-                            className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                              selectedPersona === persona.id 
-                                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' 
-                                : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-transparent'
-                            } ${isConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                            {persona.name}
-                          </button>
-                        ))}
+                        {PERSONAS.map(persona => {
+                          const Icon = persona.icon;
+                          return (
+                            <button
+                              key={persona.id}
+                              onClick={() => setSelectedPersona(persona.id)}
+                              disabled={isConnected}
+                              className={`flex items-center px-4 py-3 rounded-xl text-sm transition-all group ${
+                                selectedPersona === persona.id 
+                                  ? 'bg-white/10 text-white border border-white/20 shadow-lg' 
+                                  : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-transparent'
+                              } ${isConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              <div className={`p-2 rounded-lg mr-3 transition-colors ${selectedPersona === persona.id ? 'bg-indigo-500/20' : 'bg-white/5 group-hover:bg-white/10'}`}>
+                                <Icon className={`w-4 h-4 ${selectedPersona === persona.id ? persona.color : 'text-gray-500'}`} />
+                              </div>
+                              <span className="font-medium">{persona.name}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                     {isConnected && (

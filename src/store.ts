@@ -148,7 +148,6 @@ export interface User {
   subscriptionStatus: 'none' | 'pending' | 'active' | 'rejected';
   uploadsUsed: number;
   createdAt: string;
-  streak: number;
   lastActiveDate?: string;
   achievements: Achievement[];
   studyGoal?: number; // target hours per week
@@ -297,23 +296,7 @@ export const updateStreak = () => {
 
   if (lastActive === today) return;
 
-  let newStreak = user.streak || 0;
-  if (lastActive) {
-    const lastDate = new Date(lastActive);
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-    if (lastActive === yesterdayStr) {
-      newStreak += 1;
-    } else {
-      newStreak = 1;
-    }
-  } else {
-    newStreak = 1;
-  }
-
-  const updatedUser = { ...user, streak: newStreak, lastActiveDate: today };
+  const updatedUser = { ...user, lastActiveDate: today };
   setCurrentUser(updatedUser);
   
   const users = getUsers();
@@ -339,7 +322,7 @@ export const unlockAchievement = (achievementId: string) => {
 
 export const INITIAL_ACHIEVEMENTS: Achievement[] = [
   { id: 'first_upload', title: 'First Step', description: 'Upload your first document', icon: '🚀' },
-  { id: 'streak_3', title: 'Consistent', description: 'Maintain a 3-day study streak', icon: '🔥' },
+  { id: 'streak_3', title: 'Consistent', description: 'Maintain a 3-day study habit', icon: '🔥' },
   { id: 'quiz_master', title: 'Quiz Master', description: 'Get 100% on a mock exam', icon: '🎯' },
   { id: 'focus_pro', title: 'Deep Focus', description: 'Complete 5 focus sessions', icon: '🧘' },
   { id: 'collaborator', title: 'Team Player', description: 'Join or create a study group', icon: '🤝' }

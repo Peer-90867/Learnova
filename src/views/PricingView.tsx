@@ -71,7 +71,7 @@ export default function PricingView({ navigate, user }: Props) {
             <div className="glass-card p-8 rounded-3xl border border-[rgba(124,58,237,0.2)]">
               <h3 className="text-2xl font-bold mb-2">Free</h3>
               <div className="text-4xl font-bold mb-6">₹0<span className="text-lg text-gray-500 font-normal">/mo</span></div>
-              <p className="text-gray-400 mb-8">Perfect for trying out CramLab.</p>
+              <p className="text-gray-400 mb-8">Perfect for trying out Learnova.</p>
               
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-emerald-400 mr-3" /> 3 Document Uploads/mo</li>

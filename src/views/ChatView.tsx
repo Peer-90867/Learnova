@@ -121,7 +121,7 @@ export default function ChatView({ navigate, user }: Props) {
 
       const persona = selectedPersona;
       const chat = ai.chats.create({
-        model: "gemini-3.1-pro-preview",
+        model: "gemini-3-flash-preview",
         config: {
           systemInstruction: `${persona.instruction}
           

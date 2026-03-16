@@ -49,7 +49,7 @@ export default function NotesView({ navigate, user }: Props) {
       Content: ${targetUpload.content || ''}`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: 'gemini-3-flash-preview',
         contents: [{ parts: [{ text: prompt }] }]
       });
 
@@ -156,7 +156,7 @@ export default function NotesView({ navigate, user }: Props) {
       ${notes}`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: 'gemini-3-flash-preview',
         contents: [{ parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json",
@@ -251,7 +251,7 @@ export default function NotesView({ navigate, user }: Props) {
         const systemInstruction = `You are an expert tutor. Generate ${user.settings?.noteStyle || 'detailed'}, well-structured study notes in Markdown format based on the provided text. Include clear headings, bullet points, and use bold text for key terms. Ensure the notes are easy to read and summarize the core concepts effectively. The tone should be ${user.settings?.tone || 'Academic'} and the language should be ${user.settings?.language || 'English'}.`;
         
         const response = await ai.models.generateContent({
-          model: 'gemini-3.1-pro-preview',
+          model: 'gemini-3-flash-preview',
           contents: contents,
           config: {
             systemInstruction

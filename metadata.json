@@ -1,5 +1,5 @@
 {
-  "name": "CramLab",
+  "name": "Learnova",
   "description": "An AI-powered study platform with smart notes, flashcards, mind maps, focus timers, and collaborative study hubs.",
   "requestFramePermissions": [
     "microphone"

@@ -3,6 +3,7 @@ import { ViewName } from '../App';
 import { motion } from 'motion/react';
 import { getUsers, setUsers, setCurrentUser, User } from '../store';
 import { CheckCircle2 } from 'lucide-react';
+import Logo from '../components/Logo';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -83,7 +84,6 @@ export default function AuthView({ navigate }: Props) {
           subscriptionStatus: 'none',
           uploadsUsed: 0,
           createdAt: new Date().toISOString(),
-          streak: 1,
           achievements: []
         };
 
@@ -108,7 +108,7 @@ export default function AuthView({ navigate }: Props) {
           animate={{ opacity: 1, x: 0 }}
           className="z-10"
         >
-          <div className="text-2xl font-bold text-white mb-8">🧪 CramLab</div>
+          <Logo className="h-12 mb-12" />
           <h1 className="text-5xl font-bold text-white mb-6 leading-tight">
             Study Smarter,<br />Not Harder 🚀
           </h1>

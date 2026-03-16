@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ViewName } from '../App';
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
 import { CheckCircle2, MessageSquare, FileText, PlayCircle } from 'lucide-react';
+import Logo from '../components/Logo';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -122,7 +123,7 @@ export default function LandingView({ navigate }: Props) {
 
       {/* Navbar */}
       <nav className="sticky top-0 z-50 backdrop-blur-md bg-opacity-80 bg-[#0F0E17] border-b border-[rgba(124,58,237,0.2)] px-6 py-4 flex justify-between items-center">
-        <div className="text-xl font-bold text-gradient">🧪 CramLab</div>
+        <Logo className="h-10 cursor-pointer" onClick={() => navigate('dashboard')} />
         <div className="hidden md:flex space-x-6 text-sm text-gray-300">
           <a href="#features" className="hover:text-white transition-colors">Features</a>
           <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
@@ -234,14 +235,16 @@ export default function LandingView({ navigate }: Props) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[rgba(124,58,237,0.2)] py-8 text-center text-gray-500 text-sm">
-        <div className="mb-4 font-bold text-gradient text-lg">🧪 CramLab</div>
+      <footer className="border-t border-[rgba(124,58,237,0.2)] py-12 text-center text-gray-500 text-sm">
+        <div className="flex justify-center mb-6">
+          <Logo className="h-12" />
+        </div>
         <div className="space-x-4 mb-4">
           <a href="#" className="hover:text-white">Terms</a>
           <a href="#" className="hover:text-white">Privacy</a>
           <a href="#" className="hover:text-white">Contact</a>
         </div>
-        <p>&copy; 2025 CramLab. All rights reserved.</p>
+        <p>&copy; 2026 Learnova. All rights reserved.</p>
       </footer>
     </div>
   );

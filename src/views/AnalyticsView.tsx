@@ -77,7 +77,7 @@ export default function AnalyticsView({ navigate, user }: Props) {
             { label: 'Total Study Time', value: `${focusSessions.length * 25}m`, icon: Clock, color: 'indigo' },
             { label: 'Quizzes Taken', value: quizzes.length, icon: Target, color: 'emerald' },
             { label: 'Flashcards Mastered', value: decks.reduce((acc, d) => acc + d.cards.length, 0), icon: Brain, color: 'blue' },
-            { label: 'Study Streak', value: '5 Days', icon: Calendar, color: 'amber' }
+            { label: 'Achievements', value: `${user.achievements.filter(a => a.unlockedAt).length}/${user.achievements.length}`, icon: Award, color: 'amber' }
           ].map((stat, i) => (
             <motion.div 
               key={i}
@@ -100,7 +100,7 @@ export default function AnalyticsView({ navigate, user }: Props) {
           <div className="glass-card p-8 rounded-[2.5rem] border border-white/5 lg:col-span-3">
             <h3 className="text-xl font-bold text-white mb-6 flex items-center">
               <Calendar className="w-5 h-5 mr-3 text-amber-400" />
-              Study Streak & Activity Heatmap
+              Study Activity Heatmap
             </h3>
             <div className="flex flex-wrap gap-2">
               {[...Array(30)].map((_, i) => {
@@ -235,7 +235,6 @@ export default function AnalyticsView({ navigate, user }: Props) {
               {[
                 { title: 'Night Owl', desc: 'Completed 3 study sessions after 10 PM', date: 'Yesterday', icon: '🌙' },
                 { title: 'Perfect Score', desc: 'Got 100% on Biology Mock Exam', date: '2 days ago', icon: '🎯' },
-                { title: 'Consistency King', desc: 'Maintained a 5-day study streak', date: '3 days ago', icon: '🔥' },
                 { title: 'Deep Diver', desc: 'Spent over 2 hours in Focus Mode', date: '4 days ago', icon: '🌊' }
               ].map((ach, i) => (
                 <div key={i} className="flex items-center p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group">

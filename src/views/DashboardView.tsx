@@ -3,7 +3,7 @@ import { ViewName } from '../App';
 import Layout from '../components/Layout';
 import { getCurrentUser, getUploads, Upload, setCurrentDocumentId, getUsage, User } from '../store';
 import { motion } from 'motion/react';
-import { FileText, Layers, Clock, Target, UploadCloud, MessageSquare, Lock, TrendingUp, TrendingDown, Presentation, CheckCircle2, Search, Trophy, Star, Flame, Sparkles, ArrowRight, Activity, Mic } from 'lucide-react';
+import { FileText, Layers, Clock, Target, UploadCloud, MessageSquare, Lock, TrendingUp, TrendingDown, Presentation, CheckCircle2, Search, Trophy, Star, Sparkles, ArrowRight, Activity, Mic } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 
 interface Props {
@@ -11,11 +11,25 @@ interface Props {
   user: User | null;
 }
 
+const MOTIVATIONAL_QUOTES = [
+  "The only way to do great work is to love what you do. – Steve Jobs",
+  "Success is not final, failure is not fatal: it is the courage to continue that counts. – Winston Churchill",
+  "Believe you can and you're halfway there. – Theodore Roosevelt",
+  "It always seems impossible until it's done. – Nelson Mandela",
+  "The future belongs to those who believe in the beauty of their dreams. – Eleanor Roosevelt",
+  "Don't watch the clock; do what it does. Keep going. – Sam Levenson",
+  "The secret of getting ahead is getting started. – Mark Twain",
+  "Your talent determines what you can do. Your motivation determines how much you are willing to do. Your attitude determines how well you do it. – Lou Holtz",
+  "The only limit to our realization of tomorrow will be our doubts of today. – Franklin D. Roosevelt",
+  "Hardships often prepare ordinary people for an extraordinary destiny. – C.S. Lewis"
+];
+
 export default function DashboardView({ navigate, user }: Props) {
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [greeting, setGreeting] = useState('');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [quote, setQuote] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -25,6 +39,10 @@ export default function DashboardView({ navigate, user }: Props) {
     if (hour < 12) setGreeting('Good morning');
     else if (hour < 18) setGreeting('Good afternoon');
     else setGreeting('Good evening');
+
+    // Select a random quote
+    const randomQuote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
+    setQuote(randomQuote);
   }, [user?.id]);
 
   if (!user) return null;
@@ -119,15 +137,16 @@ export default function DashboardView({ navigate, user }: Props) {
           </div>
         </div>
 
-        {/* Study Tip of the Day */}
-        <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 p-4 rounded-2xl mb-8 flex items-start sm:items-center gap-4">
-          <div className="bg-indigo-500/20 p-2 rounded-xl flex-shrink-0">
+        {/* Motivational Quote */}
+        <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 p-6 rounded-2xl mb-8 flex items-start sm:items-center gap-4 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="bg-indigo-500/20 p-3 rounded-xl flex-shrink-0 relative z-10">
             <Sparkles className="w-6 h-6 text-indigo-400" />
           </div>
-          <div>
-            <h3 className="text-sm font-bold text-indigo-300 mb-1">Study Tip of the Day</h3>
-            <p className="text-sm text-gray-300">
-              Use the <span className="text-white font-medium">Feynman Technique</span>: Try explaining a concept in plain English as if teaching it to a beginner. If you stumble, you've found a gap in your knowledge!
+          <div className="relative z-10">
+            <h3 className="text-sm font-bold text-indigo-300 mb-1 uppercase tracking-wider">Motivational Quote</h3>
+            <p className="text-lg text-white font-medium italic leading-relaxed">
+              "{quote}"
             </p>
           </div>
         </div>
@@ -176,17 +195,10 @@ export default function DashboardView({ navigate, user }: Props) {
             </div>
             <div className="glass-card p-6 rounded-2xl hover-glow">
               <div className="text-gray-400 text-sm mb-2 flex items-center justify-between">
-                <span className="flex items-center"><Flame className="w-4 h-4 mr-2 text-orange-500" /> Streak</span>
-                <div className="text-xs font-bold text-orange-500">{user.streak || 0} Days</div>
+                <span className="flex items-center"><Trophy className="w-4 h-4 mr-2 text-amber-400" /> Achievements</span>
+                <div className="text-xs font-bold text-amber-400">{user.achievements.filter(a => a.unlockedAt).length} / {user.achievements.length}</div>
               </div>
-              <div className="text-3xl font-bold text-white">{user.streak || 0}</div>
-            </div>
-            <div className="glass-card p-6 rounded-2xl hover-glow">
-              <div className="text-gray-400 text-sm mb-2 flex items-center justify-between">
-                <span className="flex items-center"><Trophy className="w-4 h-4 mr-2 text-amber-400" /> Badges</span>
-                <div className="text-xs font-bold text-amber-400">{user.achievements?.filter(a => a.unlockedAt).length || 0} Unlocked</div>
-              </div>
-              <div className="text-3xl font-bold text-white">{user.achievements?.filter(a => a.unlockedAt).length || 0}</div>
+              <div className="text-3xl font-bold text-white">{user.achievements.filter(a => a.unlockedAt).length}</div>
             </div>
           </div>
 
@@ -212,45 +224,14 @@ export default function DashboardView({ navigate, user }: Props) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-          {/* Achievements Section */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold flex items-center">
-                <Star className="w-5 h-5 mr-2 text-amber-400" />
-                Recent Achievements
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {(user.achievements || []).slice(0, 3).map(achievement => (
-                <div 
-                  key={achievement.id}
-                  className={`glass-card p-4 rounded-xl border-l-4 transition-all duration-300 ${achievement.unlockedAt ? 'border-amber-500 bg-amber-500/5' : 'border-gray-600 opacity-50'}`}
-                >
-                  <div className="flex items-center">
-                    <div className="text-2xl mr-3">{achievement.icon}</div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-bold truncate">{achievement.title}</div>
-                      <div className="text-[10px] text-gray-500 line-clamp-1">{achievement.description}</div>
-                    </div>
-                    {achievement.unlockedAt && (
-                      <div className="ml-auto flex-shrink-0">
-                        <CheckCircle2 className="w-4 h-4 text-amber-500" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
+        <div className="grid grid-cols-1 gap-8 mb-12">
           {/* Recent Activity Section */}
           <div>
             <h2 className="text-xl font-bold mb-6 flex items-center">
               <Activity className="w-5 h-5 mr-2 text-emerald-400" />
               Recent Activity
             </h2>
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               {usage.slice(-5).reverse().map((u, i) => (
                 <div key={i} className="glass-card p-3 rounded-xl border border-white/5 flex items-center gap-3">
                   <div className="bg-emerald-500/10 p-2 rounded-lg">
