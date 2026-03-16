@@ -5,6 +5,7 @@ import { getCurrentUser, getUploads, getCurrentDocumentId, addUsage, Flashcard, 
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { ChevronLeft, ChevronRight, RefreshCw, Grid, Play, Loader2, AlertCircle, Share2, BookOpen, UploadCloud, Filter, CheckCircle2, GitBranch } from 'lucide-react';
+import Button from '../components/Button';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -328,31 +329,36 @@ export default function FlashcardsView({ navigate, user }: Props) {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <h1 className="text-2xl md:text-3xl font-bold">{documentTitle}</h1>
           <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto justify-start md:justify-end mt-4 md:mt-0 items-center">
-            <button 
+            <Button 
               onClick={() => navigate('upload')}
-              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+              variant="action"
+              size="sm"
             >
-              <UploadCloud className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Upload Another
-            </button>
-            <button 
+              <UploadCloud className="w-4 h-4 mr-2" /> Upload Another
+            </Button>
+            <Button 
               onClick={summarizeDeck}
               disabled={summarizing}
-              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm disabled:opacity-50"
+              variant="secondary"
+              size="sm"
+              isLoading={summarizing}
             >
-              {summarizing ? <Loader2 className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 animate-spin" /> : <BookOpen className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" />} Summarize
-            </button>
-            <button 
+              <BookOpen className="w-4 h-4 mr-2" /> Summarize
+            </Button>
+            <Button 
               onClick={() => setFilterMode(prev => prev === 'all' ? 'hard' : 'all')}
-              className={`flex items-center px-3 py-2 md:px-4 md:py-2.5 rounded-xl text-xs md:text-sm font-medium transition-all shadow-sm ${filterMode === 'hard' ? 'bg-red-600 text-white shadow-red-500/20 hover:bg-red-500' : 'bg-[#1A1830] border border-[rgba(124,58,237,0.2)] text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40'}`}
+              variant={filterMode === 'hard' ? 'danger' : 'secondary'}
+              size="sm"
             >
               {filterMode === 'hard' ? 'Focus Mode: Hard' : 'Focus Mode: All'}
-            </button>
+            </Button>
             
             <div className="flex bg-[#1A1830] p-1 rounded-xl border border-[rgba(124,58,237,0.2)]">
               {(['easy', 'medium', 'hard'] as const).map(diff => (
-                <button
+                <Button
                   key={diff}
                   onClick={() => toggleUiDifficulty(diff)}
+                  variant="ghost"
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                     uiDifficultyFilter.includes(diff)
                       ? diff === 'easy' ? 'bg-emerald-500 text-white' :
@@ -362,17 +368,18 @@ export default function FlashcardsView({ navigate, user }: Props) {
                   }`}
                 >
                   {diff}
-                </button>
+                </Button>
               ))}
             </div>
 
-            <button 
+            <Button 
               onClick={() => navigate('mindmap')}
-              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+              variant="secondary"
+              size="sm"
             >
-              <GitBranch className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Mind Map
-            </button>
-            <button 
+              <GitBranch className="w-4 h-4 mr-2" /> Mind Map
+            </Button>
+            <Button 
               onClick={async () => {
                 const shareData = {
                   title: documentTitle,
@@ -392,35 +399,39 @@ export default function FlashcardsView({ navigate, user }: Props) {
                   alert('Link copied to clipboard!');
                 }
               }}
-              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-indigo-600 rounded-xl text-xs md:text-sm font-bold text-white hover:bg-indigo-500 transition-all shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5"
+              variant="action"
+              size="sm"
             >
-              <Share2 className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Share
-            </button>
+              <Share2 className="w-4 h-4 mr-2" /> Share
+            </Button>
             <div className="flex gap-1 md:gap-2 bg-[#1A1830] p-1 rounded-xl border border-[rgba(124,58,237,0.2)]">
-              <button 
+              <Button 
                 onClick={() => {
                   const shuffled = [...cards].sort(() => Math.random() - 0.5);
                   setCards(shuffled);
                   setCurrentIndex(0);
                   setIsFlipped(false);
                 }}
-                className="flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors text-gray-400 hover:text-white hover:bg-white/5"
+                variant="ghost"
+                size="sm"
                 title="Shuffle Cards"
               >
-                <RefreshCw className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Shuffle
-              </button>
-              <button 
+                <RefreshCw className="w-4 h-4 mr-2" /> Shuffle
+              </Button>
+              <Button 
                 onClick={() => setViewMode('study')}
-                className={`flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${viewMode === 'study' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                variant={viewMode === 'study' ? 'primary' : 'ghost'}
+                size="sm"
               >
-                <Play className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Quiz Mode
-              </button>
-              <button 
+                <Play className="w-4 h-4 mr-2" /> Quiz Mode
+              </Button>
+              <Button 
                 onClick={() => setViewMode('grid')}
-                className={`flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${viewMode === 'grid' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                variant={viewMode === 'grid' ? 'primary' : 'ghost'}
+                size="sm"
               >
-                <Grid className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Browse
-              </button>
+                <Grid className="w-4 h-4 mr-2" /> Browse
+              </Button>
             </div>
           </div>
         </div>
@@ -429,7 +440,7 @@ export default function FlashcardsView({ navigate, user }: Props) {
           <div className="mb-8 glass-card p-6 rounded-2xl border border-indigo-500/30">
             <h3 className="text-lg font-bold mb-2 text-indigo-400">Deck Summary</h3>
             <p className="text-gray-300">{summary}</p>
-            <button onClick={() => setSummary(null)} className="mt-4 text-xs text-gray-500 hover:text-white">Close</button>
+            <Button onClick={() => setSummary(null)} variant="ghost" className="mt-4 text-xs text-gray-500 hover:text-white p-0">Close</Button>
           </div>
         )}
 
@@ -453,22 +464,24 @@ export default function FlashcardsView({ navigate, user }: Props) {
             </div>
 
             <div className="flex gap-4">
-              <button 
+              <Button 
                 onClick={() => {
                   setCurrentIndex(0);
                   setShowSessionSummary(false);
                   setIsFlipped(false);
                 }}
+                variant="primary"
                 className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20"
               >
                 Study Again
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={() => navigate('dashboard')}
+                variant="secondary"
                 className="px-8 py-3 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl font-bold transition-all"
               >
                 Back to Dashboard
-              </button>
+              </Button>
             </div>
           </div>
         ) : loading ? (
@@ -481,18 +494,20 @@ export default function FlashcardsView({ navigate, user }: Props) {
             <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
             <p className="text-red-400 mb-4">{error}</p>
             <div className="flex gap-4">
-              <button 
+              <Button 
                 onClick={generateCards}
+                variant="primary"
                 className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors"
               >
                 Retry
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={() => navigate('upload')}
+                variant="secondary"
                 className="px-6 py-3 bg-[#1A1830] hover:bg-[#211F35] text-white rounded-xl font-bold transition-colors"
               >
                 Upload a Document
-              </button>
+              </Button>
             </div>
           </div>
         ) : visibleCards.length === 0 ? (
@@ -556,23 +571,25 @@ export default function FlashcardsView({ navigate, user }: Props) {
             {/* Controls */}
             <div className="flex flex-col items-center">
               <div className="flex items-center space-x-6 mb-8">
-                <button 
+                <Button 
                   onClick={(e) => { e.stopPropagation(); handlePrev(); }}
                   disabled={currentIndex === 0}
+                  variant="ghost"
                   className="p-3 rounded-full bg-[#1A1830] hover:bg-[#211F35] text-white disabled:opacity-50 transition-colors border border-[rgba(124,58,237,0.2)]"
                 >
                   <ChevronLeft className="w-6 h-6" />
-                </button>
+                </Button>
                 <span className="font-bold text-lg">
                   {currentIndex + 1} / {visibleCards.length} Cards
                 </span>
-                <button 
+                <Button 
                   onClick={(e) => { e.stopPropagation(); handleNext(); }}
                   disabled={currentIndex === visibleCards.length - 1}
+                  variant="ghost"
                   className="p-3 rounded-full bg-[#1A1830] hover:bg-[#211F35] text-white disabled:opacity-50 transition-colors border border-[rgba(124,58,237,0.2)]"
                 >
                   <ChevronRight className="w-6 h-6" />
-                </button>
+                </Button>
               </div>
 
               {/* Spaced Repetition Buttons */}
@@ -584,15 +601,15 @@ export default function FlashcardsView({ navigate, user }: Props) {
                     exit={{ opacity: 0, y: -10 }}
                     className="flex flex-wrap justify-center gap-4"
                   >
-                    <button onClick={() => rateCard('hard')} className="px-6 py-3 rounded-xl font-bold bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-colors">
+                    <Button onClick={() => rateCard('hard')} variant="ghost" className="px-6 py-3 rounded-xl font-bold bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-colors">
                       😕 Hard — Retry
-                    </button>
-                    <button onClick={() => rateCard('ok')} className="px-6 py-3 rounded-xl font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-colors">
+                    </Button>
+                    <Button onClick={() => rateCard('ok')} variant="ghost" className="px-6 py-3 rounded-xl font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-colors">
                       🤔 OK
-                    </button>
-                    <button onClick={() => rateCard('easy')} className="px-6 py-3 rounded-xl font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors">
+                    </Button>
+                    <Button onClick={() => rateCard('easy')} variant="ghost" className="px-6 py-3 rounded-xl font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors">
                       ✅ Easy — Got it!
-                    </button>
+                    </Button>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -612,7 +629,7 @@ export default function FlashcardsView({ navigate, user }: Props) {
                   Showing {visibleCards.length} cards
                 </div>
                 {visibleCards.length > 0 && (
-                  <button 
+                  <Button 
                     onClick={() => {
                       if (selectedCards.size === visibleCards.length) {
                         setSelectedCards(new Set());
@@ -620,10 +637,11 @@ export default function FlashcardsView({ navigate, user }: Props) {
                         setSelectedCards(new Set(visibleCards.map(c => c.id)));
                       }
                     }}
-                    className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                    variant="ghost"
+                    className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors p-0"
                   >
                     {selectedCards.size === visibleCards.length ? 'Deselect All' : 'Select All'}
-                  </button>
+                  </Button>
                 )}
               </div>
               <div className="flex items-center gap-2 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl px-3 py-1.5">
@@ -674,11 +692,11 @@ export default function FlashcardsView({ navigate, user }: Props) {
             {selectedCards.size > 0 && (
               <div className="fixed bottom-8 left-1/2 -translate-x-1/2 glass-card p-4 rounded-2xl flex items-center gap-4 z-50 border border-indigo-500/50 shadow-2xl">
                 <span className="text-sm font-medium text-white">{selectedCards.size} selected</span>
-                <button onClick={() => bulkRate('hard')} className="px-4 py-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-colors">Hard</button>
-                <button onClick={() => bulkRate('ok')} className="px-4 py-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-colors">OK</button>
-                <button onClick={() => bulkRate('easy')} className="px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors">Easy</button>
+                <Button onClick={() => bulkRate('hard')} variant="ghost" className="px-4 py-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-colors">Hard</Button>
+                <Button onClick={() => bulkRate('ok')} variant="ghost" className="px-4 py-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-colors">OK</Button>
+                <Button onClick={() => bulkRate('easy')} variant="ghost" className="px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors">Easy</Button>
                 <div className="w-px h-6 bg-white/10 mx-2"></div>
-                <button onClick={bulkDelete} className="px-4 py-2 rounded-lg bg-gray-500/10 text-gray-400 border border-gray-500/30 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 transition-colors">Delete</button>
+                <Button onClick={bulkDelete} variant="danger" size="sm">Delete</Button>
               </div>
             )}
           </>

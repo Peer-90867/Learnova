@@ -3,6 +3,7 @@ import { ViewName } from '../App';
 import { getCurrentUser, setCurrentUser, getTheme, setTheme } from '../store';
 import { BarChart2, UploadCloud, Layers, FileText, MessageSquare, Gem, LogOut, Menu, X, User, Presentation, CheckCircle2, Target, Brain, Clock, Calendar, Users, Sun, Moon, Mic, Maximize, Minimize } from 'lucide-react';
 import Logo from './Logo';
+import Button from './Button';
 
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -18,6 +19,7 @@ export default function Layout({ navigate, children, activeView, hideSidebar = f
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [theme, setLocalTheme] = useState(getTheme());
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     const handleThemeUpdate = () => setLocalTheme(getTheme());
@@ -38,6 +40,7 @@ export default function Layout({ navigate, children, activeView, hideSidebar = f
   const handleLogout = () => {
     setCurrentUser(null);
     navigate('landing');
+    setShowLogoutModal(false);
   };
 
   const navItems = [
@@ -57,22 +60,39 @@ export default function Layout({ navigate, children, activeView, hideSidebar = f
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[var(--color-bg)]">
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-[var(--color-bg-card)] p-6 rounded-2xl border border-white/10 shadow-2xl max-w-sm w-full text-center">
+            <div className="flex justify-center mb-4">
+              <Logo className="h-10" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-4">Ready to leave?</h2>
+            <p className="text-gray-400 mb-6">Are you sure you want to log out of your account?</p>
+            <div className="flex gap-4">
+              <Button onClick={() => setShowLogoutModal(false)} variant="ghost" className="flex-1">Cancel</Button>
+              <Button onClick={handleLogout} variant="danger" className="flex-1">Logout</Button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Mobile Header */}
       {!isFocusMode && (
         <div className="md:hidden flex items-center justify-between p-4 border-b border-[rgba(124,58,237,0.2)] bg-[var(--color-bg-card)] sticky top-0 z-30">
           <Logo className="h-8 cursor-pointer" onClick={() => navigate('dashboard')} />
-          <button 
+          <Button 
+            variant="ghost"
             className="p-2 bg-[var(--color-bg-surface)] rounded-lg text-[var(--color-text)]"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X /> : <Menu />}
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Focus Mode Toggle (Floating) */}
-      <button 
+      <Button 
         onClick={() => setIsFocusMode(!isFocusMode)}
+        variant="ghost"
         className={`fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-2xl transition-all duration-300 ${
           isFocusMode 
             ? 'bg-indigo-600 text-white scale-110' 
@@ -81,7 +101,7 @@ export default function Layout({ navigate, children, activeView, hideSidebar = f
         title={isFocusMode ? "Exit Focus Mode" : "Enter Focus Mode"}
       >
         {isFocusMode ? <Minimize className="w-6 h-6" /> : <Maximize className="w-6 h-6" />}
-      </button>
+      </Button>
 
       {/* Mobile Overlay */}
       {mobileMenuOpen && (
@@ -100,12 +120,13 @@ export default function Layout({ navigate, children, activeView, hideSidebar = f
         `}>
           <div className="p-6 border-b border-[rgba(124,58,237,0.1)] flex items-center justify-between">
             <Logo className="h-10 cursor-pointer" onClick={() => navigate('dashboard')} />
-            <button 
+            <Button 
               onClick={toggleTheme}
+              variant="ghost"
               className="p-2 hover:bg-white/5 rounded-xl text-[var(--color-text-muted)] transition-all hover:text-indigo-400"
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
+            </Button>
           </div>
 
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
@@ -161,13 +182,14 @@ export default function Layout({ navigate, children, activeView, hideSidebar = f
                 </div>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
+            <Button
+              onClick={() => setShowLogoutModal(true)}
+              variant="ghost"
               className="w-full flex items-center px-4 py-2 text-xs font-bold text-[var(--color-text-muted)] hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all uppercase tracking-widest"
             >
               <LogOut className="mr-3 h-4 w-4" />
               Logout
-            </button>
+            </Button>
           </div>
         </aside>
       )}

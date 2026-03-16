@@ -7,6 +7,7 @@ import { Presentation as PresentationIcon, ChevronLeft, ChevronRight, Play, Down
 import { GoogleGenAI, Type } from "@google/genai";
 import { jsPDF } from 'jspdf';
 import { useToast } from '../components/Toast';
+import Button from '../components/Button';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -47,7 +48,12 @@ export default function PresentationView({ navigate, user }: Props) {
     try {
       const uploads = getUploads();
       const doc = uploads.find(u => u.id === docId);
-      if (!doc || !doc.content) throw new Error('Document content not found');
+      if (!doc) throw new Error('Document not found');
+      if (!doc.content) {
+        showToast('Document content is missing. Please re-upload the document.', 'error');
+        setLoading(false);
+        return;
+      }
 
       // Check cache
       const cached = getCache<Presentation>(`presentation_${doc.id}`);
@@ -109,6 +115,11 @@ export default function PresentationView({ navigate, user }: Props) {
       setCache(`presentation_${docId}`, newPresentation);
       addUsage('presentation');
       showToast('Presentation generated successfully!', 'success');
+
+      // Automatically generate images for all slides
+      for (let i = 0; i < newPresentation.slides.length; i++) {
+        await generateSlideImage(i);
+      }
     } catch (error: any) {
       console.error('Failed to generate presentation:', error);
       if (error?.message?.includes('429') || error?.status === 429 || error?.message?.includes('exceeded your current quota')) {
@@ -349,12 +360,13 @@ export default function PresentationView({ navigate, user }: Props) {
       <div className="p-4 md:p-8 max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div className="flex items-center">
-            <button 
+            <Button 
               onClick={() => navigate('dashboard')}
-              className="p-2 mr-4 bg-[#1A1830] rounded-xl border border-[rgba(124,58,237,0.2)] text-gray-400 hover:text-white transition-colors"
+              variant="secondary"
+              className="p-2 mr-4"
             >
               <ChevronLeft className="w-5 h-5" />
-            </button>
+            </Button>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold flex items-center">
                 <PresentationIcon className="w-8 h-8 mr-3 text-indigo-400" />
@@ -366,31 +378,35 @@ export default function PresentationView({ navigate, user }: Props) {
 
           {presentation && (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3 w-full mt-6">
-              <button 
+              <Button 
                 onClick={() => navigate('upload')}
-                className="flex items-center justify-center px-3 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+                variant="action"
+                size="sm"
               >
                 <UploadCloud className="w-4 h-4 mr-2" /> Upload Another
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={() => generatePresentation()}
-                className="flex items-center justify-center px-3 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+                variant="action"
+                size="sm"
               >
                 <RefreshCw className="w-4 h-4 mr-2" /> Regenerate
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={() => setShowAddSlideModal(true)}
-                className="flex items-center justify-center px-3 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+                variant="action"
+                size="sm"
               >
                 <Plus className="w-4 h-4 mr-2" /> Add Slide
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={handleDuplicateSlide}
-                className="flex items-center justify-center px-3 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+                variant="action"
+                size="sm"
               >
                 <Copy className="w-4 h-4 mr-2" /> Duplicate
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={() => {
                   if (!presentation || presentation.slides.length <= 1) return;
                   if (confirm('Are you sure you want to delete this slide?')) {
@@ -410,27 +426,12 @@ export default function PresentationView({ navigate, user }: Props) {
                     }
                   }
                 }}
-                className="flex items-center justify-center px-3 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 hover:border-red-500/40 transition-all shadow-sm"
+                variant="danger"
+                size="sm"
               >
-                <Trash2 className="w-4 h-4 mr-2" /> Delete
-              </button>
-              <button 
-                onClick={() => {
-                  if (presentation) {
-                    const allPresentations = getPresentations();
-                    const index = allPresentations.findIndex(p => p.id === presentation.id);
-                    if (index !== -1) {
-                      allPresentations[index] = presentation;
-                      setPresentations(allPresentations);
-                      alert('Presentation saved!');
-                    }
-                  }
-                }}
-                className="flex items-center justify-center px-3 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
-              >
-                <Save className="w-4 h-4 mr-2" /> Save
-              </button>
-              <button 
+                <Trash2 className="w-4 h-4 mr-2" /> Delete Slide
+              </Button>
+              <Button 
                 onClick={async () => {
                   if (navigator.share) {
                     try {
@@ -449,34 +450,25 @@ export default function PresentationView({ navigate, user }: Props) {
                     alert('Link copied to clipboard!');
                   }
                 }}
-                className="flex items-center justify-center px-3 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+                variant="action"
+                size="sm"
               >
                 <Share2 className="w-4 h-4 mr-2" /> Share
-              </button>
-              <button 
-                onClick={() => generateSlideImage(currentSlide)}
-                disabled={generatingImages[currentSlide]}
-                className="flex items-center justify-center px-3 py-2.5 bg-indigo-600/10 border border-indigo-500/30 rounded-xl text-xs md:text-sm font-medium text-indigo-400 hover:bg-indigo-600/20 hover:border-indigo-500/50 transition-all disabled:opacity-50 shadow-sm"
-              >
-                {generatingImages[currentSlide] ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Sparkles className="w-4 h-4 mr-2" />
-                )}
-                Generate Visual
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={() => setIsPresenting(true)}
-                className="flex items-center justify-center px-3 py-2.5 bg-indigo-600 rounded-xl text-xs md:text-sm font-bold text-white hover:bg-indigo-500 transition-all shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5"
+                variant="primary"
+                size="sm"
               >
                 <Play className="w-4 h-4 mr-2" /> Present
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={exportToPDF}
-                className="flex items-center justify-center px-3 py-2.5 bg-indigo-600 rounded-xl text-xs md:text-sm font-bold text-white hover:bg-indigo-500 transition-all shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5"
+                variant="primary"
+                size="sm"
               >
                 <Download className="w-4 h-4 mr-2" /> Export PDF
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -490,23 +482,17 @@ export default function PresentationView({ navigate, user }: Props) {
             <p className="text-gray-400 max-w-md mb-8">
               Our AI will analyze your document and create a professional slide deck with key points and AI-generated visuals.
             </p>
-            <button 
+            <Button 
               onClick={generatePresentation}
               disabled={loading || !docId}
-              className="flex items-center px-8 py-4 bg-indigo-600 rounded-2xl text-white font-bold hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
+              variant="primary"
+              size="lg"
+              isLoading={loading}
+              className="px-8 py-4"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                  Analyzing Document...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5 mr-3" />
-                  Generate Presentation
-                </>
-              )}
-            </button>
+              <Sparkles className="w-5 h-5 mr-3" />
+              {loading ? 'Analyzing Document...' : 'Generate Presentation'}
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -563,20 +549,21 @@ export default function PresentationView({ navigate, user }: Props) {
                                 if (e.key === 'Escape') setIsAddingBullet(false); 
                               }}
                             />
-                            <button onClick={handleAddBullet} className="ml-2 p-2 bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors">
+                            <Button onClick={handleAddBullet} variant="primary" className="ml-2 p-2 bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors">
                               <CheckCircle2 className="w-5 h-5 text-white" />
-                            </button>
-                            <button onClick={() => setIsAddingBullet(false)} className="ml-2 p-2 bg-red-500/10 rounded-xl hover:bg-red-500/20 transition-colors">
+                            </Button>
+                            <Button onClick={() => setIsAddingBullet(false)} variant="danger" className="ml-2 p-2 bg-red-500/10 rounded-xl hover:bg-red-500/20 transition-colors">
                               <X className="w-5 h-5 text-red-400" />
-                            </button>
+                            </Button>
                           </motion.div>
                         ) : (
-                          <button 
+                          <Button 
                             onClick={() => setIsAddingBullet(true)} 
-                            className="mt-6 flex items-center text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                            variant="ghost"
+                            className="mt-6 flex items-center text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors p-0"
                           >
                             <Plus className="w-4 h-4 mr-1" /> Add bullet point
-                          </button>
+                          </Button>
                         )}
                       </div>
                       
@@ -590,36 +577,12 @@ export default function PresentationView({ navigate, user }: Props) {
                               referrerPolicy="no-referrer"
                             />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                              <button 
-                                onClick={() => generateSlideImage(currentSlide)}
-                                disabled={generatingImages[currentSlide]}
-                                className="flex items-center px-4 py-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl text-xs font-bold text-white hover:bg-white/30 transition-colors"
-                              >
-                                {generatingImages[currentSlide] ? (
-                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                ) : (
-                                  <RefreshCw className="w-4 h-4 mr-2" />
-                                )}
-                                Regenerate Visual
-                              </button>
                             </div>
                           </div>
                         ) : (
                           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
                             <ImageIcon className="w-12 h-12 text-gray-700 mb-4" />
                             <p className="text-gray-500 text-sm mb-4">No visual generated for this slide</p>
-                            <button 
-                              onClick={() => generateSlideImage(currentSlide)}
-                              disabled={generatingImages[currentSlide]}
-                              className="flex items-center px-4 py-2 bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 rounded-xl text-xs font-bold hover:bg-indigo-600/20 transition-colors"
-                            >
-                              {generatingImages[currentSlide] ? (
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              ) : (
-                                <Sparkles className="w-4 h-4 mr-2" />
-                              )}
-                              Generate AI Visual
-                            </button>
                           </div>
                         )}
                       </div>
@@ -638,40 +601,44 @@ export default function PresentationView({ navigate, user }: Props) {
 
                 {/* Controls Overlay */}
                 <div className="absolute inset-y-0 left-0 w-16 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button 
+                  <Button 
                     onClick={prevSlide}
                     disabled={currentSlide === 0}
+                    variant="ghost"
                     className="p-3 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-indigo-600 transition-colors disabled:opacity-0"
                   >
                     <ChevronLeft className="w-6 h-6" />
-                  </button>
+                  </Button>
                 </div>
                 <div className="absolute inset-y-0 right-0 w-16 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button 
+                  <Button 
                     onClick={nextSlide}
                     disabled={currentSlide === presentation.slides.length - 1}
+                    variant="ghost"
                     className="p-3 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-indigo-600 transition-colors disabled:opacity-0"
                   >
                     <ChevronRight className="w-6 h-6" />
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               <div className="flex justify-center gap-4">
-                <button 
+                <Button 
                   onClick={prevSlide}
                   disabled={currentSlide === 0}
+                  variant="secondary"
                   className="px-6 py-3 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-2xl text-gray-400 hover:text-white transition-colors disabled:opacity-30"
                 >
                   Previous
-                </button>
-                <button 
+                </Button>
+                <Button 
                   onClick={nextSlide}
                   disabled={currentSlide === presentation.slides.length - 1}
+                  variant="primary"
                   className="px-8 py-3 bg-indigo-600 rounded-2xl text-white font-bold hover:bg-indigo-700 transition-colors disabled:opacity-30"
                 >
                   Next Slide
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -679,22 +646,23 @@ export default function PresentationView({ navigate, user }: Props) {
             <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
               <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Slide Overview</h4>
               {presentation.slides.map((slide, index) => (
-                <button
+                <Button
                   key={index}
                   onClick={() => setCurrentSlide(index)}
-                  className={`w-full text-left p-4 rounded-2xl border transition-all ${
+                  variant="ghost"
+                  className={`w-full text-left p-4 rounded-2xl border transition-all h-auto flex-col items-start ${
                     currentSlide === index 
                       ? 'bg-indigo-600/20 border-indigo-500/50 shadow-lg shadow-indigo-500/10' 
                       : 'bg-[#1A1830] border-[rgba(124,58,237,0.1)] hover:border-[rgba(124,58,237,0.3)]'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-2 w-full">
                     <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Slide {index + 1}</span>
                     {slide.imageUrl && <ImageIcon className="w-3 h-3 text-emerald-400" />}
                   </div>
-                  <div className="text-sm font-bold text-white truncate">{slide.title}</div>
-                  <div className="text-[10px] text-gray-500 mt-1 truncate">{slide.content[0]}</div>
-                </button>
+                  <div className="text-sm font-bold text-white truncate w-full text-left">{slide.title}</div>
+                  <div className="text-[10px] text-gray-500 mt-1 truncate w-full text-left">{slide.content[0]}</div>
+                </Button>
               ))}
             </div>
           </div>
@@ -739,19 +707,21 @@ export default function PresentationView({ navigate, user }: Props) {
                 </div>
                 
                 <div className="flex justify-end gap-4">
-                  <button 
+                  <Button 
                     onClick={() => setShowAddSlideModal(false)}
+                    variant="ghost"
                     className="px-6 py-3 rounded-xl font-bold text-gray-400 hover:text-white transition-colors"
                   >
                     Cancel
-                  </button>
-                  <button 
+                  </Button>
+                  <Button 
                     onClick={handleAddSlide}
                     disabled={!newSlideTitle.trim()}
+                    variant="primary"
                     className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
                   >
                     Add Slide
-                  </button>
+                  </Button>
                 </div>
               </motion.div>
             </div>
@@ -773,34 +743,37 @@ export default function PresentationView({ navigate, user }: Props) {
                   <PresentationIcon className="w-6 h-6 mr-3 text-indigo-400" />
                   <h2 className="text-xl font-bold text-white">{presentation.title}</h2>
                 </div>
-                <button 
+                <Button 
                   onClick={() => setIsPresenting(false)}
+                  variant="ghost"
                   className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
                 >
                   <X className="w-6 h-6" />
-                </button>
+                </Button>
               </div>
 
               {/* Slide Content */}
               <div className="flex-1 flex items-center justify-center p-4 md:p-8 lg:p-12 overflow-hidden relative group">
                 {/* Side Navigation Buttons (Desktop) */}
                 <div className="hidden md:flex absolute inset-y-0 left-4 items-center z-20 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button 
+                  <Button 
                     onClick={prevSlide}
                     disabled={currentSlide === 0}
+                    variant="ghost"
                     className="p-4 bg-white/10 hover:bg-indigo-600 rounded-full text-white backdrop-blur-md border border-white/10 transition-all disabled:opacity-0"
                   >
                     <ChevronLeft className="w-8 h-8" />
-                  </button>
+                  </Button>
                 </div>
                 <div className="hidden md:flex absolute inset-y-0 right-4 items-center z-20 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button 
+                  <Button 
                     onClick={nextSlide}
                     disabled={currentSlide === presentation.slides.length - 1}
+                    variant="ghost"
                     className="p-4 bg-white/10 hover:bg-indigo-600 rounded-full text-white backdrop-blur-md border border-white/10 transition-all disabled:opacity-0"
                   >
                     <ChevronRight className="w-8 h-8" />
-                  </button>
+                  </Button>
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -855,20 +828,22 @@ export default function PresentationView({ navigate, user }: Props) {
               {/* Presenter Footer */}
               <div className="p-4 md:p-8 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0 bg-gradient-to-t from-black/40 to-transparent">
                 <div className="flex gap-3 md:gap-4 order-2 md:order-1">
-                  <button 
+                  <Button 
                     onClick={prevSlide}
                     disabled={currentSlide === 0}
+                    variant="ghost"
                     className="p-3 md:p-4 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl text-white transition-colors disabled:opacity-20"
                   >
                     <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
-                  </button>
-                  <button 
+                  </Button>
+                  <Button 
                     onClick={nextSlide}
                     disabled={currentSlide === presentation.slides.length - 1}
+                    variant="ghost"
                     className="p-3 md:p-4 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl text-white transition-colors disabled:opacity-20"
                   >
                     <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
-                  </button>
+                  </Button>
                 </div>
                 
                 <div className="flex items-center gap-4 md:gap-6 order-1 md:order-2 w-full md:w-auto">

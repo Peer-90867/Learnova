@@ -4,6 +4,8 @@ import Layout from '../components/Layout';
 import { getCurrentUser, addUsage, User, FocusSession, setFocusSessions, getFocusSessions } from '../store';
 import { motion, AnimatePresence } from 'motion/react';
 import { Play, Pause, RotateCcw, Coffee, Brain, Timer, CheckCircle2, Volume2, VolumeX } from 'lucide-react';
+import Button from '../components/Button';
+
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -114,9 +116,10 @@ export default function FocusView({ navigate, user }: Props) {
           <div className="relative z-10">
             <div className="flex justify-center gap-4 mb-12">
               {(['pomodoro', 'short-break', 'long-break'] as const).map(m => (
-                <button
+                <Button
                   key={m}
                   onClick={() => switchMode(m)}
+                  variant={mode === m ? "primary" : "secondary"}
                   className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all ${
                     mode === m 
                       ? `bg-${modeConfig[m].color}-600 text-white shadow-lg shadow-${modeConfig[m].color}-500/20` 
@@ -124,7 +127,7 @@ export default function FocusView({ navigate, user }: Props) {
                   }`}
                 >
                   {modeConfig[m].label}
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -138,15 +141,17 @@ export default function FocusView({ navigate, user }: Props) {
             </div>
 
             <div className="flex justify-center items-center gap-8">
-              <button 
+              <Button 
                 onClick={resetTimer}
+                variant="ghost"
                 className="p-4 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all"
               >
                 <RotateCcw className="w-8 h-8" />
-              </button>
+              </Button>
               
-              <button 
+              <Button 
                 onClick={toggleTimer}
+                variant={isActive ? "secondary" : "primary"}
                 className={`w-24 h-24 rounded-full flex items-center justify-center transition-all transform hover:scale-105 ${
                   isActive 
                     ? 'bg-white/10 text-white border border-white/20' 
@@ -154,14 +159,15 @@ export default function FocusView({ navigate, user }: Props) {
                 }`}
               >
                 {isActive ? <Pause className="w-10 h-10" /> : <Play className="w-10 h-10 ml-1" />}
-              </button>
+              </Button>
 
-              <button 
+              <Button 
                 onClick={() => setIsMuted(!isMuted)}
+                variant="ghost"
                 className="p-4 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all"
               >
                 {isMuted ? <VolumeX className="w-8 h-8" /> : <Volume2 className="w-8 h-8" />}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

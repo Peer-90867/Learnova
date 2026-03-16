@@ -5,6 +5,7 @@ import { getCurrentUser, getUploads, setUploads, setCurrentUser, Upload, addUsag
 import { motion, AnimatePresence } from 'motion/react';
 import { FileUp, Link as LinkIcon, Type, CheckCircle2, Loader2, UploadCloud, Layers, FileText, Lock, Sparkles, X, Eye, Search } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
+import Button from '../components/Button';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -351,24 +352,27 @@ export default function UploadView({ navigate, user }: Props) {
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-6 bg-[#1A1830] p-1 rounded-xl w-full sm:w-fit border border-[rgba(124,58,237,0.2)]">
-          <button 
+          <Button 
             onClick={() => setActiveTab('file')}
-            className={`flex-1 sm:flex-none flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'file' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            variant={activeTab === 'file' ? 'primary' : 'ghost'}
+            className="flex-1 sm:flex-none"
           >
             <FileUp className="w-4 h-4 mr-2" /> File
-          </button>
-          <button 
+          </Button>
+          <Button 
             onClick={() => setActiveTab('url')}
-            className={`flex-1 sm:flex-none flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'url' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            variant={activeTab === 'url' ? 'primary' : 'ghost'}
+            className="flex-1 sm:flex-none"
           >
             <LinkIcon className="w-4 h-4 mr-2" /> URL
-          </button>
-          <button 
+          </Button>
+          <Button 
             onClick={() => setActiveTab('text')}
-            className={`flex-1 sm:flex-none flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'text' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            variant={activeTab === 'text' ? 'primary' : 'ghost'}
+            className="flex-1 sm:flex-none"
           >
             <Type className="w-4 h-4 mr-2" /> Text
-          </button>
+          </Button>
         </div>
 
         {/* Upload Area */}
@@ -378,9 +382,9 @@ export default function UploadView({ navigate, user }: Props) {
               <Lock className="w-12 h-12 text-amber-400 mb-4" />
               <h3 className="text-xl font-bold mb-2">Upload Limit Reached</h3>
               <p className="text-gray-400 mb-4">Upgrade to Pro for unlimited uploads.</p>
-              <button onClick={() => navigate('pricing')} className="bg-gradient-gold text-white px-6 py-3 rounded-xl font-bold hover-glow">
+              <Button onClick={() => navigate('pricing')} variant="primary" className="bg-gradient-gold hover-glow">
                 Upgrade Plan &rarr;
-              </button>
+              </Button>
             </div>
           )}
 
@@ -423,20 +427,24 @@ export default function UploadView({ navigate, user }: Props) {
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button 
+                        <Button 
                           onClick={(e) => { e.stopPropagation(); handlePreview(file); }}
+                          variant="ghost"
+                          size="sm"
                           className="p-1.5 text-gray-500 hover:text-indigo-400 hover:bg-indigo-400/10 rounded-lg transition-colors"
                           title="Preview File"
                         >
                           <Eye className="w-4 h-4" />
-                        </button>
-                        <button 
+                        </Button>
+                        <Button 
                           onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
+                          variant="ghost"
+                          size="sm"
                           className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                           title="Remove File"
                         >
                           <X className="w-4 h-4" />
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -476,13 +484,14 @@ export default function UploadView({ navigate, user }: Props) {
                   className={`flex-1 bg-[#0F0E17] border ${urlError ? 'border-red-500' : 'border-[rgba(124,58,237,0.2)]'} rounded-xl px-4 py-4 text-white focus:outline-none focus:border-indigo-500 transition-colors`}
                 />
                 {urlError && <p className="text-red-400 text-xs mt-1">{urlError}</p>}
-                <button 
+                <Button 
                   onClick={handleFetchUrl}
                   disabled={loading || !url}
-                  className="bg-indigo-600 text-white rounded-xl px-6 py-4 font-bold hover:bg-indigo-700 transition-colors"
+                  variant="primary"
+                  className="px-6 py-4"
                 >
                   {loading ? 'Fetching...' : 'Fetch'}
-                </button>
+                </Button>
               </div>
               {fetchError && <p className="text-red-400 text-sm mt-2">{fetchError}</p>}
               {fetchSuccess && <p className="text-emerald-400 text-sm mt-2">{fetchSuccess}</p>}
@@ -591,21 +600,24 @@ export default function UploadView({ navigate, user }: Props) {
                     {key === 'quiz' && <span className="w-4 h-4 mr-3 text-emerald-400 font-bold">?</span>}
                     {key.replace(/([A-Z])/g, ' $1').trim()}
                   </div>
-                  <button 
+                  <Button 
                     onClick={() => setToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof toggles] }))}
-                    className={`w-12 h-6 rounded-full relative transition-colors ${value ? 'bg-indigo-500' : 'bg-[#0F0E17] border border-[rgba(124,58,237,0.2)]'}`}
+                    variant="ghost"
+                    className={`w-12 h-6 rounded-full relative transition-colors p-0 ${value ? 'bg-indigo-500' : 'bg-[#0F0E17] border border-[rgba(124,58,237,0.2)]'}`}
                   >
                     <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${value ? 'translate-x-7' : 'translate-x-1'}`}></div>
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
           </motion.div>
         )}
 
-        <button 
+        <Button 
           onClick={handleUpload}
           disabled={loading || atLimit || !isReady}
+          variant="primary"
+          size="lg"
           className={`w-full bg-gradient-gold text-white rounded-xl px-4 py-4 font-bold text-lg flex justify-center items-center transition-all ${loading || atLimit || !isReady ? 'opacity-50 cursor-not-allowed' : 'hover-glow'}`}
         >
           {loading ? (
@@ -613,7 +625,7 @@ export default function UploadView({ navigate, user }: Props) {
           ) : (
             <>⚡ Generate Study Materials</>
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Loading Overlay */}
@@ -686,12 +698,14 @@ export default function UploadView({ navigate, user }: Props) {
                     />
                   </div>
                 )}
-                <button 
+                <Button 
                   onClick={() => { setPreviewFile(null); setPreviewSearchQuery(''); }}
+                  variant="ghost"
+                  size="sm"
                   className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-colors"
                 >
                   <X className="w-5 h-5" />
-                </button>
+                </Button>
               </div>
               
               <div className="flex-1 overflow-hidden bg-[#1A1830] rounded-xl border border-[rgba(124,58,237,0.2)] relative flex items-center justify-center">

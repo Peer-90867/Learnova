@@ -72,12 +72,11 @@ export default function AnalyticsView({ navigate, user }: Props) {
         </div>
 
         {/* Top Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
           {[
             { label: 'Total Study Time', value: `${focusSessions.length * 25}m`, icon: Clock, color: 'indigo' },
             { label: 'Quizzes Taken', value: quizzes.length, icon: Target, color: 'emerald' },
-            { label: 'Flashcards Mastered', value: decks.reduce((acc, d) => acc + d.cards.length, 0), icon: Brain, color: 'blue' },
-            { label: 'Achievements', value: `${(user.achievements || []).filter(a => a.unlockedAt).length}/${(user.achievements || []).length}`, icon: Award, color: 'amber' }
+            { label: 'Flashcards Mastered', value: decks.reduce((acc, d) => acc + d.cards.length, 0), icon: Brain, color: 'blue' }
           ].map((stat, i) => (
             <motion.div 
               key={i}
@@ -189,9 +188,9 @@ export default function AnalyticsView({ navigate, user }: Props) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-8">
           {/* Distribution */}
-          <div className="glass-card p-8 rounded-[2.5rem] border border-white/5 lg:col-span-1">
+          <div className="glass-card p-8 rounded-[2.5rem] border border-white/5">
             <h3 className="text-xl font-bold text-white mb-8">Study Distribution</h3>
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -223,27 +222,6 @@ export default function AnalyticsView({ navigate, user }: Props) {
                     <span className="text-gray-400 capitalize">{entry.name}</span>
                   </div>
                   <span className="text-white font-bold">{entry.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent Achievements */}
-          <div className="glass-card p-8 rounded-[2.5rem] border border-white/5 lg:col-span-2">
-            <h3 className="text-xl font-bold text-white mb-6">Recent Achievements</h3>
-            <div className="space-y-4">
-              {[
-                { title: 'Night Owl', desc: 'Completed 3 study sessions after 10 PM', date: 'Yesterday', icon: '🌙' },
-                { title: 'Perfect Score', desc: 'Got 100% on Biology Mock Exam', date: '2 days ago', icon: '🎯' },
-                { title: 'Deep Diver', desc: 'Spent over 2 hours in Focus Mode', date: '4 days ago', icon: '🌊' }
-              ].map((ach, i) => (
-                <div key={i} className="flex items-center p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group">
-                  <div className="text-3xl mr-4 group-hover:scale-110 transition-transform">{ach.icon}</div>
-                  <div className="flex-1">
-                    <div className="text-white font-bold">{ach.title}</div>
-                    <div className="text-sm text-gray-500">{ach.desc}</div>
-                  </div>
-                  <div className="text-xs text-gray-600 font-bold uppercase tracking-wider">{ach.date}</div>
                 </div>
               ))}
             </div>

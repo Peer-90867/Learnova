@@ -33,6 +33,12 @@ export default function App() {
   const [user, setUser] = useState(getCurrentUser());
 
   useEffect(() => {
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         setUser(null);

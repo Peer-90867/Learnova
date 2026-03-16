@@ -137,33 +137,41 @@ export default function LandingView({ navigate }: Props) {
 
       {/* Hero */}
       <main className="flex-1 flex flex-col items-center justify-center text-center px-4 py-20 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="inline-flex items-center gap-2 glass-card px-4 py-2 rounded-full mb-8 border border-indigo-500/30"
+        >
+          <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+          <span className="text-sm font-medium text-indigo-200">AI-Powered Study Assistant</span>
+        </motion.div>
         <motion.h1 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-5xl md:text-7xl font-bold mb-6 max-w-4xl leading-tight"
+          className="text-6xl md:text-8xl font-bold mb-8 max-w-5xl leading-[1.1] tracking-tighter"
         >
-          Turn Any Document Into Your <span className="text-gradient">Personal Tutor</span>
+          Master Your Studies with <span className="text-gradient">Learnova</span>
         </motion.h1>
         <motion.p 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="text-xl text-gray-400 mb-10 max-w-2xl"
+          className="text-xl md:text-2xl text-gray-400 mb-12 max-w-3xl"
         >
-          Upload PDFs, videos, articles. Get AI flashcards, smart notes, and interactive chat — in seconds.
+          Upload any document, video, or article. Get instant AI-powered flashcards, smart summaries, and an interactive study tutor.
         </motion.p>
         
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-16"
+          className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 mb-20"
         >
-          <button onClick={() => navigate('auth')} className="bg-gradient-gold text-white px-8 py-4 rounded-xl font-bold text-lg hover-glow flex items-center justify-center">
-            Start For Free &rarr;
+          <button onClick={() => navigate('auth')} className="bg-gradient-gold text-white px-10 py-5 rounded-2xl font-bold text-lg hover-glow flex items-center justify-center shadow-xl shadow-indigo-500/20">
+            Get Started Free &rarr;
           </button>
-          <button className="glass-panel text-white px-8 py-4 rounded-xl font-bold text-lg hover-glow flex items-center justify-center">
-            <PlayCircle className="mr-2 h-5 w-5" /> Watch Demo
+          <button className="glass-panel text-white px-10 py-5 rounded-2xl font-bold text-lg hover-glow flex items-center justify-center border border-white/10">
+            <PlayCircle className="mr-3 h-6 w-6" /> Watch Demo
           </button>
         </motion.div>
 

@@ -5,6 +5,7 @@ import { getTodos, setTodos, User, Todo } from '../store';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, Circle, Trash2, Calendar, Plus, Clock, AlertCircle, ChevronLeft, Tag, Flag, Filter, Wand2, Loader2, Edit2, X, Save } from 'lucide-react';
 import { GoogleGenAI, Type } from '@google/genai';
+import Button from '../components/Button';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -58,6 +59,13 @@ export default function TodoView({ navigate, user }: Props) {
     };
 
     saveTodos([todo, ...todos]);
+    
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Task Added', {
+        body: `New task: ${todo.text}`,
+      });
+    }
+
     setNewTodo('');
     setDueDate('');
     setPriority('medium');
@@ -227,12 +235,13 @@ export default function TodoView({ navigate, user }: Props) {
       <div className="p-4 md:p-8 max-w-5xl mx-auto">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
           <div className="flex items-center">
-            <button 
+            <Button 
               onClick={() => navigate('dashboard')}
+              variant="ghost"
               className="p-2 mr-4 bg-[#1A1830] rounded-xl border border-[rgba(124,58,237,0.2)] text-gray-400 hover:text-white transition-colors"
             >
               <ChevronLeft className="w-5 h-5" />
-            </button>
+            </Button>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold flex items-center">
                 <CheckCircle2 className="w-8 h-8 mr-3 text-emerald-400" />
@@ -333,23 +342,25 @@ export default function TodoView({ navigate, user }: Props) {
               </div>
             </div>
             <div className="flex-1"></div>
-            <button 
+            <Button 
               type="button"
               onClick={generateTasksWithAI}
               disabled={!newTodo.trim() || isGenerating}
+              isLoading={isGenerating}
+              variant="secondary"
               className="w-full md:w-auto px-6 py-3 bg-indigo-600/10 border border-indigo-500/30 rounded-2xl text-indigo-400 font-bold hover:bg-indigo-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              {isGenerating ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Wand2 className="w-5 h-5 mr-2" />}
+              {!isGenerating && <Wand2 className="w-5 h-5 mr-2" />}
               AI Breakdown
-            </button>
-            <button 
+            </Button>
+            <Button 
               type="submit"
               disabled={!newTodo.trim() || isGenerating}
               className="w-full md:w-auto px-8 py-3 bg-indigo-600 rounded-2xl text-white font-bold hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20 flex items-center justify-center"
             >
               <Plus className="w-5 h-5 mr-2" />
               Add Task
-            </button>
+            </Button>
           </div>
         </form>
 
@@ -357,24 +368,27 @@ export default function TodoView({ navigate, user }: Props) {
         {todos.length > 0 && (
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div className="flex bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl p-1">
-              <button 
+              <Button 
                 onClick={() => setFilter('all')}
+                variant="ghost"
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'all' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
               >
                 All
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={() => setFilter('active')}
+                variant="ghost"
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'active' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
               >
                 Active
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={() => setFilter('completed')}
+                variant="ghost"
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'completed' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
               >
                 Completed
-              </button>
+              </Button>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl px-3 py-1">
@@ -390,12 +404,13 @@ export default function TodoView({ navigate, user }: Props) {
                 </select>
               </div>
               {todos.some(t => t.completed) && (
-                <button
+                <Button
                   onClick={clearCompleted}
+                  variant="danger"
                   className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-sm font-medium hover:bg-red-500/20 transition-colors"
                 >
                   Clear Completed
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -468,12 +483,12 @@ export default function TodoView({ navigate, user }: Props) {
                           </select>
                         </div>
                         <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                          <button onClick={cancelEdit} className="p-2 text-gray-400 hover:text-white bg-[#1A1830] rounded-xl transition-colors">
+                          <Button onClick={cancelEdit} variant="ghost" className="p-2 text-gray-400 hover:text-white bg-[#1A1830] rounded-xl transition-colors">
                             <X className="w-5 h-5" />
-                          </button>
-                          <button onClick={saveEdit} className="p-2 text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 rounded-xl transition-colors">
+                          </Button>
+                          <Button onClick={saveEdit} variant="ghost" className="p-2 text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 rounded-xl transition-colors">
                             <Save className="w-5 h-5" />
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -533,18 +548,20 @@ export default function TodoView({ navigate, user }: Props) {
                         </div>
                       </div>
                       <div className="flex items-center mt-4 md:mt-0 md:ml-4 self-end md:self-auto opacity-100 md:opacity-0 group-hover:opacity-100 transition-all">
-                        <button 
+                        <Button 
                           onClick={() => startEditing(todo)}
+                          variant="ghost"
                           className="p-2 text-gray-400 hover:text-indigo-400 transition-colors"
                         >
                           <Edit2 className="w-5 h-5" />
-                        </button>
-                        <button 
+                        </Button>
+                        <Button 
                           onClick={() => deleteTodo(todo.id)}
+                          variant="ghost"
                           className="p-2 text-gray-400 hover:text-red-400 transition-colors"
                         >
                           <Trash2 className="w-5 h-5" />
-                        </button>
+                        </Button>
                       </div>
                     </>
                   )}

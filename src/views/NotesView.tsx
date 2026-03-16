@@ -6,6 +6,7 @@ import { GoogleGenAI, Modality } from "@google/genai";
 import { Loader2, Download, Share2, FileText, AlertCircle, Clipboard, UploadCloud, Volume2, Play, Pause, Headphones, Zap, Mic, Edit3, Save, X, GitBranch, Layers } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
+import Button from '../components/Button';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -291,7 +292,7 @@ export default function NotesView({ navigate, user }: Props) {
             {documentTitle}
           </h1>
           <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto justify-start md:justify-end mt-4 md:mt-0">
-            <button 
+            <Button 
               onClick={() => {
                 if (isEditing) {
                   setNotes(editedNotes);
@@ -301,89 +302,90 @@ export default function NotesView({ navigate, user }: Props) {
                   setIsEditing(true);
                 }
               }}
-              className={`flex items-center px-3 py-2 md:px-4 md:py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shadow-md ${
-                isEditing 
-                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20' 
-                  : 'bg-[#1A1830] border border-[rgba(124,58,237,0.2)] text-gray-300 hover:text-white hover:bg-indigo-500/10'
-              }`}
+              variant={isEditing ? 'action' : 'secondary'}
+              size="sm"
             >
               {isEditing ? <Save className="w-4 h-4 mr-2" /> : <Edit3 className="w-4 h-4 mr-2" />}
               {isEditing ? 'Save Changes' : 'Edit Notes'}
-            </button>
+            </Button>
             {isEditing && (
-              <button 
+              <Button 
                 onClick={() => setIsEditing(false)}
-                className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-red-600/10 border border-red-500/20 text-red-400 rounded-xl text-xs md:text-sm font-bold hover:bg-red-600/20 transition-all"
+                variant="danger"
+                size="sm"
               >
                 <X className="w-4 h-4 mr-2" /> Cancel
-              </button>
+              </Button>
             )}
-            <button 
+            <Button 
               onClick={generateCramGuide}
               disabled={cramLoading}
-              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs md:text-sm font-bold transition-all shadow-md shadow-orange-500/20 disabled:opacity-50"
+              variant="primary"
+              size="sm"
+              isLoading={cramLoading}
             >
-              {cramLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
+              <Zap className="w-4 h-4 mr-2" />
               Cram Mode
-            </button>
-            <button 
+            </Button>
+            <Button 
               onClick={() => navigate('voice_tutor')}
-              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs md:text-sm font-bold transition-all shadow-md shadow-purple-500/20"
+              variant="primary"
+              size="sm"
             >
               <Mic className="w-4 h-4 mr-2" />
               Voice Tutor
-            </button>
-            <button 
+            </Button>
+            <Button 
               onClick={audioUrl ? toggleAudio : generateAudioSummary}
               disabled={audioLoading}
-              className={`flex items-center px-3 py-2 md:px-4 md:py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shadow-md ${
-                isPlaying 
-                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20' 
-                  : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20'
-              } disabled:opacity-50`}
+              variant={isPlaying ? 'primary' : 'primary'}
+              size="sm"
+              isLoading={audioLoading}
             >
-              {audioLoading ? (
-                <Loader2 className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 animate-spin" />
-              ) : isPlaying ? (
-                <Pause className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" />
+              {isPlaying ? (
+                <Pause className="w-4 h-4 mr-2" />
               ) : (
-                <Headphones className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" />
+                <Headphones className="w-4 h-4 mr-2" />
               )}
-              {audioLoading ? 'Generating Podcast...' : isPlaying ? 'Pause Summary' : 'Listen to Summary'}
-            </button>
+              {isPlaying ? 'Pause Summary' : 'Listen to Summary'}
+            </Button>
             <audio 
               ref={audioRef} 
               onEnded={() => setIsPlaying(false)} 
               className="hidden" 
             />
-            <button 
+            <Button 
               onClick={() => navigate('upload')}
-              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+              variant="action"
+              size="sm"
             >
-              <UploadCloud className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Upload Another
-            </button>
-            <button 
+              <UploadCloud className="w-4 h-4 mr-2" /> Upload Another
+            </Button>
+            <Button 
               onClick={() => navigate('mindmap')}
-              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+              variant="secondary"
+              size="sm"
             >
-              <GitBranch className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Mind Map
-            </button>
-            <button 
+              <GitBranch className="w-4 h-4 mr-2" /> Mind Map
+            </Button>
+            <Button 
               onClick={() => navigate('flashcards')}
-              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+              variant="secondary"
+              size="sm"
             >
-              <Layers className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Flashcards
-            </button>
-            <button 
+              <Layers className="w-4 h-4 mr-2" /> Flashcards
+            </Button>
+            <Button 
               onClick={() => {
                 navigator.clipboard.writeText(notes);
                 alert('Notes copied to clipboard!');
               }}
-              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+              variant="secondary"
+              size="sm"
             >
-              <Clipboard className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Copy
-            </button>
-            <button 
+              <Clipboard className="w-4 h-4 mr-2" /> Copy
+            </Button>
+            <Button 
               onClick={() => {
                 const blob = new Blob([notes], { type: 'text/markdown' });
                 const url = URL.createObjectURL(blob);
@@ -393,24 +395,27 @@ export default function NotesView({ navigate, user }: Props) {
                 a.click();
                 URL.revokeObjectURL(url);
               }}
-              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+              variant="secondary"
+              size="sm"
             >
-              <Download className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Export MD
-            </button>
-            <button 
+              <Download className="w-4 h-4 mr-2" /> Export MD
+            </Button>
+            <Button 
               onClick={exportToPDF}
-              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm"
+              variant="secondary"
+              size="sm"
             >
-              <Download className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Export PDF
-            </button>
-            <button 
+              <Download className="w-4 h-4 mr-2" /> Export PDF
+            </Button>
+            <Button 
               onClick={generateFlashcards}
               disabled={loading}
-              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-xs md:text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm disabled:opacity-50"
+              variant="secondary"
+              size="sm"
             >
-              <Layers className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Gen Flashcards
-            </button>
-            <button 
+              <Layers className="w-4 h-4 mr-2" /> Gen Flashcards
+            </Button>
+            <Button 
               onClick={async () => {
                 const shareData = {
                   title: documentTitle,
@@ -430,10 +435,11 @@ export default function NotesView({ navigate, user }: Props) {
                   alert('Link copied to clipboard!');
                 }
               }}
-              className="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-indigo-600 rounded-xl text-xs md:text-sm font-bold text-white hover:bg-indigo-500 transition-all shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5"
+              variant="action"
+              size="sm"
             >
-              <Share2 className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" /> Share
-            </button>
+              <Share2 className="w-4 h-4 mr-2" /> Share
+            </Button>
           </div>
         </div>
 
@@ -446,12 +452,12 @@ export default function NotesView({ navigate, user }: Props) {
           <div className="flex-1 flex flex-col items-center justify-center text-center">
             <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
             <p className="text-red-400 mb-4">{error}</p>
-            <button 
+            <Button 
               onClick={() => navigate('upload')}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors"
+              variant="primary"
             >
               Upload a Document
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="flex-1 glass-card rounded-2xl p-8 overflow-y-auto max-w-none">

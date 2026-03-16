@@ -5,6 +5,7 @@ import { getCurrentUser, User } from '../store';
 import { GoogleGenAI, Modality, LiveServerMessage } from "@google/genai";
 import { Mic, MicOff, Volume2, VolumeX, Loader2, Brain, X, Headphones, Sparkles, Settings2, MessageSquareText, GraduationCap, Lightbulb, ShieldAlert, Baby, Languages, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import Button from '../components/Button';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -315,20 +316,22 @@ export default function VoiceTutorView({ navigate, user }: Props) {
                     </div>
 
                     <div className="flex gap-6 md:gap-8">
-                      <button
+                      <Button
                         onClick={() => setIsMuted(!isMuted)}
+                        variant="ghost"
                         className={`w-16 h-16 md:w-20 md:h-20 rounded-3xl flex items-center justify-center transition-all ${
                           isMuted ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
                         }`}
                       >
                         {isMuted ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={stopSession}
-                        className="w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-red-600 hover:bg-red-500 text-white flex items-center justify-center transition-all shadow-2xl shadow-red-500/30 group"
+                        variant="danger"
+                        className="w-16 h-16 md:w-20 md:h-20 rounded-3xl flex items-center justify-center transition-all shadow-2xl shadow-red-500/30 group"
                       >
                         <X className="w-8 h-8 group-hover:rotate-90 transition-transform" />
-                      </button>
+                      </Button>
                     </div>
 
                     <div className="mt-10 flex items-center text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-emerald-400">
@@ -341,20 +344,22 @@ export default function VoiceTutorView({ navigate, user }: Props) {
             </div>
             
             <div className="flex gap-4 mb-8">
-              <button 
+              <Button 
                 onClick={() => setShowSettings(!showSettings)}
+                variant="ghost"
                 className={`flex items-center px-4 py-2 rounded-xl text-sm font-medium transition-colors ${showSettings ? 'bg-indigo-500/20 text-indigo-400' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
               >
                 <Settings2 className="w-4 h-4 mr-2" />
                 Settings
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={() => setShowTranscript(!showTranscript)}
+                variant="ghost"
                 className={`flex items-center px-4 py-2 rounded-xl text-sm font-medium transition-colors ${showTranscript ? 'bg-purple-500/20 text-purple-400' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
               >
                 <MessageSquareText className="w-4 h-4 mr-2" />
                 Transcript
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -380,10 +385,11 @@ export default function VoiceTutorView({ navigate, user }: Props) {
                       <label className="block text-xs font-medium text-gray-400 mb-2">Voice</label>
                       <div className="grid grid-cols-1 gap-2">
                         {VOICES.map(voice => (
-                          <button
+                          <Button
                             key={voice.id}
                             onClick={() => setSelectedVoice(voice.id)}
                             disabled={isConnected}
+                            variant="ghost"
                             className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                               selectedVoice === voice.id 
                                 ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' 
@@ -391,7 +397,7 @@ export default function VoiceTutorView({ navigate, user }: Props) {
                             } ${isConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             {voice.name}
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     </div>
@@ -402,10 +408,11 @@ export default function VoiceTutorView({ navigate, user }: Props) {
                         {PERSONAS.map(persona => {
                           const Icon = persona.icon;
                           return (
-                            <button
+                            <Button
                               key={persona.id}
                               onClick={() => setSelectedPersona(persona.id)}
                               disabled={isConnected}
+                              variant="ghost"
                               className={`flex items-center px-4 py-3 rounded-xl text-sm transition-all group ${
                                 selectedPersona === persona.id 
                                   ? 'bg-white/10 text-white border border-white/20 shadow-lg' 
@@ -416,7 +423,7 @@ export default function VoiceTutorView({ navigate, user }: Props) {
                                 <Icon className={`w-4 h-4 ${selectedPersona === persona.id ? persona.color : 'text-gray-500'}`} />
                               </div>
                               <span className="font-medium">{persona.name}</span>
-                            </button>
+                            </Button>
                           );
                         })}
                       </div>
@@ -478,13 +485,13 @@ export default function VoiceTutorView({ navigate, user }: Props) {
                         placeholder="Type a message..."
                         className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-indigo-500/50 transition-colors"
                       />
-                      <button
+                      <Button
                         type="submit"
                         disabled={!textInput.trim()}
                         className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
                       >
                         Send
-                      </button>
+                      </Button>
                     </form>
                   )}
                 </motion.div>

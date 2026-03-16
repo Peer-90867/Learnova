@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { Loader2, AlertCircle, Share2, Download, RefreshCw, GitBranch, Maximize2, ZoomIn, ZoomOut, Search, Palette, ChevronRight, ChevronDown, FileJson, Image as ImageIcon } from 'lucide-react';
 import * as d3 from 'd3';
+import Button from '../components/Button';
+
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -336,24 +338,27 @@ export default function MindMapView({ navigate, user }: Props) {
             
             <div className="flex bg-[#1A1830] p-1 rounded-xl border border-[rgba(124,58,237,0.2)]">
               {colors.map((color) => (
-                <button
+                <Button
                   key={color.value}
                   onClick={() => setThemeColor(color.value)}
-                  className={`w-8 h-8 rounded-lg transition-all ${themeColor === color.value ? 'scale-110 ring-2 ring-white' : 'opacity-50 hover:opacity-100'}`}
+                  variant="ghost"
+                  className={`w-8 h-8 rounded-lg transition-all p-0 ${themeColor === color.value ? 'scale-110 ring-2 ring-white' : 'opacity-50 hover:opacity-100'}`}
                   style={{ backgroundColor: color.value }}
                   title={color.name}
                 />
               ))}
             </div>
 
-            <button 
+            <Button 
               onClick={generateMindMap}
               disabled={loading}
-              className="flex items-center px-4 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm disabled:opacity-50"
+              variant="action"
+              size="md"
+              isLoading={loading}
             >
-              {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />} 
+              <RefreshCw className="w-4 h-4 mr-2" /> 
               Regenerate
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -366,42 +371,46 @@ export default function MindMapView({ navigate, user }: Props) {
           <div className="flex flex-col items-center justify-center h-[600px] text-center glass-card rounded-3xl border border-red-500/20">
             <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
             <p className="text-red-400 mb-4">{error}</p>
-            <button 
+            <Button 
               onClick={() => navigate('upload')}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors"
+              variant="primary"
+              size="lg"
             >
               Upload a Document
-            </button>
+            </Button>
           </div>
         ) : mindMap ? (
           <div className="glass-card rounded-3xl p-6 border border-[rgba(124,58,237,0.2)] relative overflow-hidden bg-[#0F0E17]">
             <div className="absolute top-6 right-6 flex gap-2 z-10">
-              <button 
+              <Button 
                 onClick={() => handleZoom(1.2)}
+                variant="ghost"
                 className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
                 title="Zoom In"
               >
                 <ZoomIn className="w-5 h-5" />
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={() => handleZoom(0.8)}
+                variant="ghost"
                 className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
                 title="Zoom Out"
               >
                 <ZoomOut className="w-5 h-5" />
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={() => {
                   if (svgRef.current) {
                     const svg = d3.select(svgRef.current);
                     svg.transition().call(d3.zoom().transform as any, d3.zoomIdentity.translate(0, 0).scale(0.8));
                   }
                 }}
+                variant="ghost"
                 className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
                 title="Reset View"
               >
                 <Maximize2 className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
 
             <div className="absolute bottom-6 left-6 z-10 bg-black/40 backdrop-blur-md p-3 rounded-xl border border-white/5 text-xs text-gray-400">
@@ -430,21 +439,26 @@ export default function MindMapView({ navigate, user }: Props) {
                 Created on {new Date(mindMap.createdAt).toLocaleDateString()}
               </div>
               <div className="flex gap-3">
-                <button 
+                <Button 
                   onClick={exportJSON}
-                  className="flex items-center px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium text-gray-300 transition-colors"
+                  variant="secondary"
+                  size="sm"
                 >
                   <FileJson className="w-4 h-4 mr-2" /> Export JSON
-                </button>
-                <button 
+                </Button>
+                <Button 
                   onClick={exportPNG}
-                  className="flex items-center px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium text-gray-300 transition-colors"
+                  variant="secondary"
+                  size="sm"
                 >
                   <ImageIcon className="w-4 h-4 mr-2" /> Export PNG
-                </button>
-                <button className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-sm font-medium text-white transition-colors">
+                </Button>
+                <Button 
+                  variant="action"
+                  size="sm"
+                >
                   <Share2 className="w-4 h-4 mr-2" /> Share
-                </button>
+                </Button>
               </div>
             </div>
           </div>

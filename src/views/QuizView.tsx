@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { Loader2, AlertCircle, CheckCircle2, XCircle, ChevronRight, RefreshCw, FileText, Target, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
+import Button from '../components/Button';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -270,18 +271,20 @@ export default function QuizView({ navigate, user }: Props) {
             </h1>
             <p className="text-gray-400 mt-1">Test your knowledge with AI-generated questions</p>
           </div>
-          <button 
+          <Button 
             onClick={() => {
               setShowConfig(true);
               setQuiz(null);
               setQuizFinished(false);
             }}
             disabled={loading}
-            className="flex items-center px-4 py-2.5 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-xl text-sm font-medium text-gray-300 hover:text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all shadow-sm disabled:opacity-50"
+            variant="secondary"
+            size="md"
+            isLoading={loading}
           >
-            {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />} 
+            <RefreshCw className="w-4 h-4 mr-2" /> 
             New Quiz Settings
-          </button>
+          </Button>
         </div>
 
         {showConfig && !loading && (
@@ -305,9 +308,10 @@ export default function QuizView({ navigate, user }: Props) {
                 <label className="block text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Number of Questions</label>
                 <div className="grid grid-cols-4 gap-2">
                   {[3, 5, 10, 15].map(count => (
-                    <button
+                    <Button
                       key={count}
                       onClick={() => setQuestionCount(count)}
+                      variant={questionCount === count ? "primary" : "secondary"}
                       className={`py-3 rounded-xl border transition-all ${
                         questionCount === count 
                           ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
@@ -315,7 +319,7 @@ export default function QuizView({ navigate, user }: Props) {
                       }`}
                     >
                       {count}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -324,9 +328,10 @@ export default function QuizView({ navigate, user }: Props) {
                 <label className="block text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Difficulty Level</label>
                 <div className="grid grid-cols-3 gap-2">
                   {(['easy', 'medium', 'hard'] as const).map(level => (
-                    <button
+                    <Button
                       key={level}
                       onClick={() => setDifficulty(level)}
+                      variant={difficulty === level ? "primary" : "secondary"}
                       className={`py-3 rounded-xl border transition-all capitalize ${
                         difficulty === level 
                           ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
@@ -334,19 +339,21 @@ export default function QuizView({ navigate, user }: Props) {
                       }`}
                     >
                       {level}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
             </div>
 
-            <button 
+            <Button 
               onClick={generateQuiz}
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-lg transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center"
+              variant="primary"
+              size="lg"
+              className="w-full"
             >
               <RefreshCw className="w-5 h-5 mr-2" />
               Generate Quiz
-            </button>
+            </Button>
           </motion.div>
         )}
 
@@ -359,12 +366,13 @@ export default function QuizView({ navigate, user }: Props) {
           <div className="flex flex-col items-center justify-center h-64 text-center glass-card rounded-3xl border border-red-500/20">
             <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
             <p className="text-red-400 mb-4">{error}</p>
-            <button 
+            <Button 
               onClick={() => navigate('upload')}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors"
+              variant="primary"
+              size="lg"
             >
               Upload a Document
-            </button>
+            </Button>
           </div>
         ) : quiz && !quizFinished ? (
           <div className="glass-card rounded-3xl p-6 md:p-10 border border-[rgba(124,58,237,0.2)] relative overflow-hidden">
@@ -411,16 +419,17 @@ export default function QuizView({ navigate, user }: Props) {
                 }
 
                 return (
-                  <button
+                  <Button
                     key={index}
                     onClick={() => handleOptionSelect(index)}
                     disabled={showExplanation || isReviewing}
+                    variant="ghost"
                     className={buttonClass}
                   >
                     <span className="flex-1">{option}</span>
                     {showExplanation && isCorrect && <CheckCircle2 className="w-5 h-5 text-emerald-400 ml-3 flex-shrink-0" />}
                     {showExplanation && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-red-400 ml-3 flex-shrink-0" />}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -443,37 +452,41 @@ export default function QuizView({ navigate, user }: Props) {
             <div className="flex justify-end gap-4">
               {isReviewing ? (
                 <>
-                  <button
+                  <Button
                     onClick={handlePrevReviewQuestion}
                     disabled={currentQuestionIndex === 0}
-                    className="px-8 py-3 bg-[#1A1830] border border-[rgba(124,58,237,0.2)] text-gray-300 hover:text-white rounded-xl font-bold transition-colors disabled:opacity-50 flex items-center"
+                    variant="secondary"
+                    size="lg"
                   >
                     Previous
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={handleNextReviewQuestion}
-                    className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-indigo-500/20 flex items-center"
+                    variant="primary"
+                    size="lg"
                   >
                     {currentQuestionIndex < quiz.questions.length - 1 ? 'Next' : 'Finish Review'}
                     <ChevronRight className="w-5 h-5 ml-2" />
-                  </button>
+                  </Button>
                 </>
               ) : !showExplanation ? (
-                <button
+                <Button
                   onClick={handleSubmitAnswer}
                   disabled={selectedOption === null}
-                  className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
+                  variant="primary"
+                  size="lg"
                 >
                   Check Answer
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   onClick={handleNextQuestion}
-                  className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-indigo-500/20 flex items-center"
+                  variant="primary"
+                  size="lg"
                 >
                   {currentQuestionIndex < quiz.questions.length - 1 ? 'Next Question' : 'See Results'}
                   <ChevronRight className="w-5 h-5 ml-2" />
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -492,34 +505,39 @@ export default function QuizView({ navigate, user }: Props) {
             </p>
             
             <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4">
-              <button 
+              <Button 
                 onClick={startReview}
-                className="px-8 py-3 bg-[#211F35] hover:bg-[#2A2845] text-white rounded-xl font-bold transition-colors border border-[rgba(124,58,237,0.2)] flex items-center justify-center"
+                variant="secondary"
+                size="lg"
               >
                 <FileText className="w-5 h-5 mr-2" /> Review Answers
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={exportToPDF}
-                className="px-8 py-3 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-xl font-bold transition-colors border border-purple-500/30 flex items-center justify-center"
+                variant="ghost"
+                size="lg"
+                className="bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border border-purple-500/30"
               >
                 <Download className="w-5 h-5 mr-2" /> Export to PDF
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={() => {
                   setShowConfig(true);
                   setQuiz(null);
                   setQuizFinished(false);
                 }}
-                className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-indigo-500/20 flex items-center justify-center"
+                variant="primary"
+                size="lg"
               >
                 <RefreshCw className="w-5 h-5 mr-2" /> Try Another Quiz
-              </button>
-              <button 
+              </Button>
+              <Button 
                 onClick={() => navigate('dashboard')}
-                className="px-8 py-3 bg-[#211F35] hover:bg-[#2A2845] text-white rounded-xl font-bold transition-colors border border-[rgba(124,58,237,0.2)]"
+                variant="secondary"
+                size="lg"
               >
                 Back to Dashboard
-              </button>
+              </Button>
             </div>
           </motion.div>
         ) : null}

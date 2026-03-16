@@ -5,7 +5,7 @@ import { CheckCircle2 } from 'lucide-react';
 import Logo from '../components/Logo';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/Toast';
-import { User, INITIAL_ACHIEVEMENTS, setCurrentUser } from '../store';
+import { User, setCurrentUser } from '../store';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -75,7 +75,6 @@ export default function AuthView({ navigate }: Props) {
             subscriptionStatus: 'none',
             uploadsUsed: 0,
             createdAt: user.created_at,
-            achievements: INITIAL_ACHIEVEMENTS,
           };
           setCurrentUser(localUser);
         }

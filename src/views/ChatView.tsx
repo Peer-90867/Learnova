@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { MessageSquare, Send, ChevronLeft, Loader2, Bot, User as UserIcon, Trash2, Sparkles, GraduationCap, Brain, Zap, Coffee, Book, Download } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import Markdown from 'react-markdown';
+import Button from '../components/Button';
 
 interface Persona {
   id: string;
@@ -364,7 +365,7 @@ export default function ChatView({ navigate, user }: Props) {
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                           </button>
                           {i === messages.length - 1 && (
-                            <button
+                            <Button
                               onClick={() => {
                                 const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
                                 if (lastUserMessage) {
@@ -375,11 +376,13 @@ export default function ChatView({ navigate, user }: Props) {
                                   // Let's just populate the input.
                                 }
                               }}
+                              variant="ghost"
+                              size="sm"
                               className="p-1 text-gray-400 hover:text-indigo-400 hover:bg-white/10 rounded transition-colors"
                               title="Regenerate response"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                            </button>
+                            </Button>
                           )}
                         </div>
                       )}
@@ -447,13 +450,14 @@ export default function ChatView({ navigate, user }: Props) {
               placeholder={loading ? "AI is thinking..." : "Ask a question about this document..."}
               className={`flex-1 bg-[#0F0E17] border border-[rgba(124,58,237,0.2)] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             />
-            <button 
+            <Button 
               type="submit"
               disabled={!input.trim() || loading}
-              className="bg-indigo-600 text-white p-3 rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[48px]"
+              variant="primary"
+              className="p-3 rounded-xl min-w-[48px]"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-            </button>
+            </Button>
           </form>
         </div>
         
@@ -480,18 +484,18 @@ export default function ChatView({ navigate, user }: Props) {
               <h3 className="text-xl font-bold text-white mb-2">Clear Chat History</h3>
               <p className="text-gray-400 mb-6">Are you sure you want to clear the chat history? This action cannot be undone.</p>
               <div className="flex justify-end gap-3">
-                <button
+                <Button
                   onClick={cancelClearChat}
-                  className="px-4 py-2 rounded-xl text-gray-300 hover:bg-white/5 transition-colors font-medium"
+                  variant="ghost"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={executeClearChat}
-                  className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors font-medium"
+                  variant="danger"
                 >
                   Clear
-                </button>
+                </Button>
               </div>
             </motion.div>
           </motion.div>

@@ -131,14 +131,6 @@ export interface StudyGroup {
   collaborativeDocument: string;
 }
 
-export interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  unlockedAt?: string;
-}
-
 export interface User {
   id: number;
   name: string;
@@ -149,7 +141,6 @@ export interface User {
   uploadsUsed: number;
   createdAt: string;
   lastActiveDate?: string;
-  achievements: Achievement[];
   studyGoal?: number; // target hours per week
   dailyGoal?: number; // target tasks per day
   settings?: {
@@ -226,17 +217,35 @@ export const setStore = <T>(key: string, value: T) => {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (e: any) {
     if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-      console.warn('LocalStorage quota exceeded, attempting to clear old presentations...');
+      console.warn(`LocalStorage quota exceeded for key ${key}, attempting to clear space...`);
       try {
+        // 1. Clear cache first
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('sf_cache_')) localStorage.removeItem(k);
+        });
+
+        // 2. If still failing, clear usage history
+        localStorage.removeItem('sf_usage');
+
+        // 3. If still failing, clear half of presentations
         const presentations = getPresentations();
         if (presentations.length > 1) {
-          // Remove the oldest half of presentations
           const keptPresentations = presentations.slice(Math.floor(presentations.length / 2));
           localStorage.setItem('sf_presentations', JSON.stringify(keptPresentations));
-          // Try saving the original request again
-          localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        // 4. If still failing and key is sf_uploads, remove oldest upload
+        if (key === 'sf_uploads' && Array.isArray(value) && value.length > 1) {
+          const uploads = value as Upload[];
+          // Remove the oldest upload
+          const trimmedUploads = uploads.slice(1);
+          localStorage.setItem('sf_uploads', JSON.stringify(trimmedUploads));
           return;
         }
+
+        // Try saving the original request again
+        localStorage.setItem(key, JSON.stringify(value));
+        return;
       } catch (retryError) {
         console.error('Failed to clear space in localStorage', retryError);
       }
@@ -322,31 +331,6 @@ export const updateStreak = () => {
   const users = getUsers();
   setUsers(users.map(u => u.id === user.id ? updatedUser : u));
 };
-
-export const unlockAchievement = (achievementId: string) => {
-  const user = getCurrentUser();
-  if (!user) return;
-
-  if (user.achievements.some(a => a.id === achievementId && a.unlockedAt)) return;
-
-  const updatedAchievements = user.achievements.map(a => 
-    a.id === achievementId ? { ...a, unlockedAt: new Date().toISOString() } : a
-  );
-
-  const updatedUser = { ...user, achievements: updatedAchievements };
-  setCurrentUser(updatedUser);
-  
-  const users = getUsers();
-  setUsers(users.map(u => u.id === user.id ? updatedUser : u));
-};
-
-export const INITIAL_ACHIEVEMENTS: Achievement[] = [
-  { id: 'first_upload', title: 'First Step', description: 'Upload your first document', icon: '🚀' },
-  { id: 'streak_3', title: 'Consistent', description: 'Maintain a 3-day study habit', icon: '🔥' },
-  { id: 'quiz_master', title: 'Quiz Master', description: 'Get 100% on a mock exam', icon: '🎯' },
-  { id: 'focus_pro', title: 'Deep Focus', description: 'Complete 5 focus sessions', icon: '🧘' },
-  { id: 'collaborator', title: 'Team Player', description: 'Join or create a study group', icon: '🤝' }
-];
 
 export const isAdmin = (): boolean => {
   try {

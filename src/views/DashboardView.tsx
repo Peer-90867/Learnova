@@ -5,6 +5,7 @@ import { getCurrentUser, getUploads, Upload, setCurrentDocumentId, getUsage, Use
 import { motion } from 'motion/react';
 import { FileText, Layers, Clock, Target, UploadCloud, MessageSquare, Lock, TrendingUp, TrendingDown, Presentation, CheckCircle2, Search, Trophy, Star, Sparkles, ArrowRight, Activity, Mic } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
+import Button from '../components/Button';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -193,13 +194,6 @@ export default function DashboardView({ navigate, user }: Props) {
               </div>
               <div className="text-3xl font-bold text-white">{stats.notes.total}</div>
             </div>
-            <div className="glass-card p-6 rounded-2xl hover-glow">
-              <div className="text-gray-400 text-sm mb-2 flex items-center justify-between">
-                <span className="flex items-center"><Trophy className="w-4 h-4 mr-2 text-amber-400" /> Achievements</span>
-                <div className="text-xs font-bold text-amber-400">{(user.achievements || []).filter(a => a.unlockedAt).length} / {(user.achievements || []).length}</div>
-              </div>
-              <div className="text-3xl font-bold text-white">{(user.achievements || []).filter(a => a.unlockedAt).length}</div>
-            </div>
           </div>
 
           <div className="glass-card p-6 rounded-2xl border border-indigo-500/20 flex flex-col justify-between">
@@ -251,12 +245,14 @@ export default function DashboardView({ navigate, user }: Props) {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">Weekly Usage Statistics</h2>
           {selectedDay && (
-            <button 
+            <Button 
               onClick={() => setSelectedDay(null)}
-              className="text-sm text-indigo-400 hover:text-indigo-300"
+              variant="ghost"
+              size="sm"
+              className="text-indigo-400 hover:text-indigo-300"
             >
               Clear filter ({selectedDay})
-            </button>
+            </Button>
           )}
         </div>
         <div className="glass-card p-6 rounded-2xl mb-12 h-80">
@@ -292,62 +288,67 @@ export default function DashboardView({ navigate, user }: Props) {
         {/* Quick Actions */}
         <h2 className="text-xl font-bold mb-6">Quick Actions</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-4 md:gap-6 mb-12">
-          <button 
+          <Button 
             onClick={() => navigate('focus')}
-            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
+            variant="ghost"
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1 h-auto"
           >
             <div className="bg-emerald-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-emerald-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
               <Clock className="w-6 h-6 md:w-8 md:h-8 text-emerald-400" />
             </div>
             <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">Quick Focus</h3>
             <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Start a Pomodoro session</p>
-          </button>
+          </Button>
 
-          <button 
+          <Button 
             onClick={() => navigate('upload')}
-            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
+            variant="ghost"
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1 h-auto"
           >
             <div className="bg-indigo-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-indigo-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
               <UploadCloud className="w-6 h-6 md:w-8 md:h-8 text-indigo-400" />
             </div>
             <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">Upload Media</h3>
             <p className="text-gray-400 text-xs md:text-sm line-clamp-2">PDF, video, or paste text</p>
-          </button>
+          </Button>
           
-          <button 
+          <Button 
             onClick={() => navigate('notes')}
-            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
+            variant="ghost"
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1 h-auto"
           >
             <div className="bg-blue-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-blue-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
               <FileText className="w-6 h-6 md:w-8 md:h-8 text-blue-400" />
             </div>
             <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">My Notes</h3>
             <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Review generated notes</p>
-          </button>
+          </Button>
 
-          <button 
+          <Button 
             onClick={() => navigate('flashcards')}
-            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
+            variant="ghost"
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1 h-auto"
           >
             <div className="bg-purple-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-purple-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
               <Layers className="w-6 h-6 md:w-8 md:h-8 text-purple-400" />
             </div>
             <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">My Flashcards</h3>
             <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Continue your last deck</p>
-          </button>
+          </Button>
 
-          <button 
+          <Button 
             onClick={() => navigate('presentation')}
-            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
+            variant="ghost"
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1 h-auto"
           >
             <div className="bg-emerald-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-emerald-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
               <Presentation className="w-6 h-6 md:w-8 md:h-8 text-emerald-400" />
             </div>
             <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">Presentation</h3>
             <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Create slides from docs</p>
-          </button>
+          </Button>
 
-          <button 
+          <Button 
             onClick={() => {
               const lastUpload = uploads[0];
               if (lastUpload) {
@@ -357,47 +358,51 @@ export default function DashboardView({ navigate, user }: Props) {
                 navigate('upload');
               }
             }}
-            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
+            variant="ghost"
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1 h-auto"
           >
             <div className="bg-cyan-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-cyan-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
               <MessageSquare className="w-6 h-6 md:w-8 md:h-8 text-cyan-400" />
             </div>
             <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">AI Chat</h3>
             <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Ask questions about docs</p>
-          </button>
+          </Button>
 
-          <button 
+          <Button 
             onClick={() => navigate('quiz')}
-            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
+            variant="ghost"
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1 h-auto"
           >
             <div className="bg-rose-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-rose-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
               <Target className="w-6 h-6 md:w-8 md:h-8 text-rose-400" />
             </div>
             <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">Mock Exams</h3>
             <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Test your knowledge</p>
-          </button>
+          </Button>
 
-          <button 
+          <Button 
             onClick={() => navigate('voice_tutor')}
-            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
+            variant="ghost"
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1 h-auto"
           >
             <div className="bg-fuchsia-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-fuchsia-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
               <Mic className="w-6 h-6 md:w-8 md:h-8 text-fuchsia-400" />
             </div>
             <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">Voice Tutor</h3>
             <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Practice with AI</p>
-          </button>
+          </Button>
 
-          <button 
+          <Button 
             onClick={() => navigate('todos')}
-            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1"
+            variant="ghost"
+            className="glass-card p-4 md:p-6 rounded-2xl hover-glow text-left flex flex-col items-start group transition-transform duration-300 hover:-translate-y-1 h-auto"
           >
             <div className="bg-amber-500/20 p-3 md:p-4 rounded-xl mb-3 md:mb-4 group-hover:bg-amber-500/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
               <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8 text-amber-400" />
             </div>
             <h3 className="text-sm md:text-base font-bold mb-1 md:mb-2 line-clamp-1">Study Tasks</h3>
             <p className="text-gray-400 text-xs md:text-sm line-clamp-2">Set goals & deadlines</p>
-          </button>
+          </Button>
         </div>
 
         {/* Recent Uploads */}
@@ -460,42 +465,50 @@ export default function DashboardView({ navigate, user }: Props) {
                       </div>
                     </div>
                     <div className="flex w-full sm:w-auto gap-2">
-                      <button 
+                      <Button 
                         onClick={() => {
                           setCurrentDocumentId(upload.id);
                           navigate('notes');
                         }} 
-                        className="flex-1 sm:flex-none text-sm bg-[#211F35] hover:bg-indigo-600 border border-[rgba(124,58,237,0.2)] px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1 sm:flex-none whitespace-nowrap"
                       >
                         Smart Notes
-                      </button>
-                      <button 
+                      </Button>
+                      <Button 
                         onClick={() => {
                           setCurrentDocumentId(upload.id);
                           navigate('flashcards');
                         }} 
-                        className="flex-1 sm:flex-none text-sm bg-[#211F35] hover:bg-purple-600 border border-[rgba(124,58,237,0.2)] px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1 sm:flex-none whitespace-nowrap"
                       >
                         Flashcards
-                      </button>
-                      <button 
+                      </Button>
+                      <Button 
                         onClick={() => {
                           setCurrentDocumentId(upload.id);
                           navigate('presentation');
                         }} 
-                        className="flex-1 sm:flex-none text-sm bg-[#211F35] hover:bg-emerald-600 border border-[rgba(124,58,237,0.2)] px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1 sm:flex-none whitespace-nowrap"
                       >
                         Presentation
-                      </button>
-                      <button 
+                      </Button>
+                      <Button 
                         onClick={() => {
                           setCurrentDocumentId(upload.id);
                           navigate('chat');
                         }} 
-                        className="flex-1 sm:flex-none text-sm bg-[#211F35] hover:bg-blue-600 border border-[rgba(124,58,237,0.2)] px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1 sm:flex-none whitespace-nowrap"
                       >
                         Chat
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))}

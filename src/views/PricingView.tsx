@@ -3,6 +3,7 @@ import { ViewName } from '../App';
 import Layout from '../components/Layout';
 import { getCurrentUser, getSubscriptions, setSubscriptions, setCurrentUser, Subscription, User } from '../store';
 import { CheckCircle2, XCircle, Gem, Loader2, QrCode } from 'lucide-react';
+import Button from '../components/Button';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -80,9 +81,9 @@ export default function PricingView({ navigate, user }: Props) {
                 <li className="flex items-center text-gray-500"><XCircle className="w-5 h-5 mr-3" /> No Smart Notes</li>
               </ul>
               
-              <button disabled className="w-full py-3 rounded-xl font-bold bg-[#211F35] text-gray-400 cursor-not-allowed">
+              <Button disabled className="w-full py-3 rounded-xl font-bold bg-[#211F35] text-gray-400 cursor-not-allowed">
                 Current Plan
-              </button>
+              </Button>
             </div>
 
             {/* Pro Plan */}
@@ -100,12 +101,12 @@ export default function PricingView({ navigate, user }: Props) {
                 <li className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-amber-400 mr-3" /> AI Smart Notes</li>
               </ul>
               
-              <button 
+              <Button 
                 onClick={() => { setSelectedPlan('pro'); setShowPayment(true); }}
                 className="w-full py-3 rounded-xl font-bold bg-gradient-gold text-white hover-glow"
               >
                 Upgrade to Pro
-              </button>
+              </Button>
             </div>
 
             {/* Team Plan */}
@@ -121,22 +122,23 @@ export default function PricingView({ navigate, user }: Props) {
                 <li className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-indigo-400 mr-3" /> Priority Support</li>
               </ul>
               
-              <button 
+              <Button 
                 onClick={() => { setSelectedPlan('team'); setShowPayment(true); }}
                 className="w-full py-3 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
               >
                 Get Team Plan
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
           <div className="max-w-md mx-auto glass-card p-8 rounded-3xl border border-amber-500/50">
-            <button 
+            <Button 
               onClick={() => setShowPayment(false)}
+              variant="ghost"
               className="text-sm text-gray-400 hover:text-white mb-6 flex items-center"
             >
               &larr; Back to plans
-            </button>
+            </Button>
             
             <h2 className="text-2xl font-bold mb-2">Complete Payment</h2>
             <p className="text-gray-400 mb-6">
@@ -168,13 +170,14 @@ export default function PricingView({ navigate, user }: Props) {
               <p className="text-xs text-gray-500 mt-2">After payment, enter the transaction ID here for manual verification.</p>
             </div>
 
-            <button 
+            <Button 
               onClick={handleSubscribe}
               disabled={loading || !transactionId.trim()}
+              isLoading={loading}
               className="w-full bg-gradient-gold text-white rounded-xl px-4 py-4 font-bold text-lg flex justify-center items-center hover-glow disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Submit for Verification'}
-            </button>
+              Submit for Verification
+            </Button>
           </div>
         )}
       </div>

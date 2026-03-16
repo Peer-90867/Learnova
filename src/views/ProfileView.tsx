@@ -6,6 +6,7 @@ import { User as UserIcon, Save, AlertCircle, CheckCircle2, Moon, Sun, Folder } 
 import { getCurrentUser, setCurrentUser, getUsers, setUsers, User } from '../store';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/Toast';
+import Button from '../components/Button';
 
 interface Props {
   navigate: (view: ViewName) => void;
@@ -265,20 +266,22 @@ export default function ProfileView({ navigate, user }: Props) {
             {error && <div className="flex items-center text-red-400 text-sm"><AlertCircle className="w-4 h-4 mr-2" /> {error}</div>}
             {success && <div className="flex items-center text-emerald-400 text-sm"><CheckCircle2 className="w-4 h-4 mr-2" /> {success}</div>}
 
-            <button
+            <Button
               type="submit"
               disabled={loading}
+              isLoading={loading}
               className="w-full bg-gradient-primary text-white py-3 rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center"
             >
-              {loading ? 'Updating...' : <><Save className="w-5 h-5 mr-2" /> Save Changes</>}
-            </button>
-            <button
+              {!loading && <Save className="w-5 h-5 mr-2" />} Save Changes
+            </Button>
+            <Button
               type="button"
               onClick={handleLogout}
-              className="w-full bg-red-500/10 text-red-400 py-3 rounded-xl font-bold hover:bg-red-500/20 transition-colors flex items-center justify-center"
+              variant="danger"
+              className="w-full py-3 rounded-xl font-bold flex items-center justify-center"
             >
               Logout
-            </button>
+            </Button>
           </form>
         </motion.div>
       </div>
