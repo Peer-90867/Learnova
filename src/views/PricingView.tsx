@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ViewName } from '../App';
 import Layout from '../components/Layout';
-import { getCurrentUser, getSubscriptions, setSubscriptions, setCurrentUser, Subscription, User } from '../store';
+import { getCurrentUser, getSubscriptions, setSubscriptions, setCurrentUser, Subscription, User, PLANS } from '../store';
 import { CheckCircle2, XCircle, Gem, Loader2, QrCode } from 'lucide-react';
 import Button from '../components/Button';
 
@@ -70,15 +70,12 @@ export default function PricingView({ navigate, user }: Props) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {/* Free Plan */}
             <div className="glass-card p-8 rounded-3xl border border-[rgba(124,58,237,0.2)]">
-              <h3 className="text-2xl font-bold mb-2">Free</h3>
-              <div className="text-4xl font-bold mb-6">₹0<span className="text-lg text-gray-500 font-normal">/mo</span></div>
+              <h3 className="text-2xl font-bold mb-2">{PLANS.free.name}</h3>
+              <div className="text-4xl font-bold mb-6">₹{PLANS.free.price}<span className="text-lg text-gray-500 font-normal">/mo</span></div>
               <p className="text-gray-400 mb-8">Perfect for trying out Learnova.</p>
               
               <ul className="space-y-4 mb-8">
-                <li className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-emerald-400 mr-3" /> 3 Document Uploads/mo</li>
-                <li className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-emerald-400 mr-3" /> Basic Flashcards</li>
-                <li className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-emerald-400 mr-3" /> AI Smart Notes</li>
-                <li className="flex items-center text-gray-500"><XCircle className="w-5 h-5 mr-3" /> No Smart Notes</li>
+                {PLANS.free.features.map(f => <li key={f} className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-emerald-400 mr-3" /> {f}</li>)}
               </ul>
               
               <Button disabled className="w-full py-3 rounded-xl font-bold bg-[#211F35] text-gray-400 cursor-not-allowed">
@@ -91,42 +88,37 @@ export default function PricingView({ navigate, user }: Props) {
               <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-gold text-white px-4 py-1 rounded-full text-sm font-bold flex items-center">
                 <Gem className="w-4 h-4 mr-1" /> Most Popular
               </div>
-              <h3 className="text-2xl font-bold mb-2 text-amber-400">Pro</h3>
-              <div className="text-4xl font-bold mb-6">₹299<span className="text-lg text-gray-500 font-normal">/mo</span></div>
+              <h3 className="text-2xl font-bold mb-2 text-amber-400">{PLANS.pro.name}</h3>
+              <div className="text-4xl font-bold mb-6">₹{PLANS.pro.price}<span className="text-lg text-gray-500 font-normal">/mo</span></div>
               <p className="text-gray-400 mb-8">Everything you need to ace exams.</p>
               
               <ul className="space-y-4 mb-8">
-                <li className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-amber-400 mr-3" /> Unlimited Uploads</li>
-                <li className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-amber-400 mr-3" /> Advanced Flashcards</li>
-                <li className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-amber-400 mr-3" /> AI Smart Notes</li>
+                {PLANS.pro.features.map(f => <li key={f} className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-amber-400 mr-3" /> {f}</li>)}
               </ul>
               
               <Button 
                 onClick={() => { setSelectedPlan('pro'); setShowPayment(true); }}
                 className="w-full py-3 rounded-xl font-bold bg-gradient-gold text-white hover-glow"
               >
-                Upgrade to Pro
+                Upgrade to {PLANS.pro.name}
               </Button>
             </div>
 
             {/* Team Plan */}
             <div className="glass-card p-8 rounded-3xl border border-[rgba(124,58,237,0.2)]">
-              <h3 className="text-2xl font-bold mb-2">Study Group</h3>
-              <div className="text-4xl font-bold mb-6">₹999<span className="text-lg text-gray-500 font-normal">/mo</span></div>
+              <h3 className="text-2xl font-bold mb-2">{PLANS.team.name}</h3>
+              <div className="text-4xl font-bold mb-6">₹{PLANS.team.price}<span className="text-lg text-gray-500 font-normal">/mo</span></div>
               <p className="text-gray-400 mb-8">For study groups up to 5 members.</p>
               
               <ul className="space-y-4 mb-8">
-                <li className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-indigo-400 mr-3" /> 5 Pro Accounts</li>
-                <li className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-indigo-400 mr-3" /> Shared Flashcard Decks</li>
-                <li className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-indigo-400 mr-3" /> Collaborative Notes</li>
-                <li className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-indigo-400 mr-3" /> Priority Support</li>
+                {PLANS.team.features.map(f => <li key={f} className="flex items-center text-gray-300"><CheckCircle2 className="w-5 h-5 text-indigo-400 mr-3" /> {f}</li>)}
               </ul>
               
               <Button 
                 onClick={() => { setSelectedPlan('team'); setShowPayment(true); }}
                 className="w-full py-3 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
               >
-                Get Team Plan
+                Get {PLANS.team.name} Plan
               </Button>
             </div>
           </div>

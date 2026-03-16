@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { ViewName } from '../App';
 import Layout from '../components/Layout';
 import { motion } from 'motion/react';
-import { User as UserIcon, Save, AlertCircle, CheckCircle2, Moon, Sun, Folder } from 'lucide-react';
-import { getCurrentUser, setCurrentUser, getUsers, setUsers, User } from '../store';
+import { User as UserIcon, Save, AlertCircle, CheckCircle2, Moon, Sun, Folder, LogOut } from 'lucide-react';
+import { getCurrentUser, setCurrentUser, getUsers, setUsers, User, getSubscriptions } from '../store';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/Toast';
 import Button from '../components/Button';
@@ -153,7 +153,7 @@ export default function ProfileView({ navigate, user }: Props) {
             </div>
           </div>
 
-          <div className="mb-8 p-6 bg-[var(--color-bg-surface)] rounded-2xl border border-[rgba(124,58,237,0.1)] flex items-center justify-between">
+           <div className="mb-8 p-6 bg-[var(--color-bg-surface)] rounded-2xl border border-[rgba(124,58,237,0.1)] flex items-center justify-between">
             <div className="flex items-center">
               <div className={`p-2 rounded-lg mr-4 ${theme === 'light' ? 'bg-amber-500/20 text-amber-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
                 {theme === 'light' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -171,6 +171,37 @@ export default function ProfileView({ navigate, user }: Props) {
                 {theme === 'light' ? <Sun className="w-3 h-3 text-amber-500" /> : <Moon className="w-3 h-3 text-indigo-600" />}
               </div>
             </button>
+          </div>
+
+          <div className="mb-8">
+            <h2 className="text-lg font-bold mb-4">Transaction History</h2>
+            <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-[rgba(124,58,237,0.1)] overflow-hidden">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-[#1A1830]/50 text-gray-400">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Plan</th>
+                    <th className="px-4 py-3 font-medium">Amount</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[rgba(124,58,237,0.1)]">
+                  {getSubscriptions().filter(s => s.userId === user.id).map(sub => (
+                    <tr key={sub.id}>
+                      <td className="px-4 py-3 capitalize">{sub.plan}</td>
+                      <td className="px-4 py-3">${sub.amount}</td>
+                      <td className="px-4 py-3 capitalize">{sub.status}</td>
+                      <td className="px-4 py-3">{new Date(sub.submittedAt).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                  {getSubscriptions().filter(s => s.userId === user.id).length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-3 text-center text-gray-500">No transactions found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <form onSubmit={handleUpdate} className="space-y-6">
@@ -280,7 +311,7 @@ export default function ProfileView({ navigate, user }: Props) {
               variant="danger"
               className="w-full py-3 rounded-xl font-bold flex items-center justify-center"
             >
-              Logout
+              <LogOut className="w-4 h-4 mr-2" /> Logout
             </Button>
           </form>
         </motion.div>

@@ -26,6 +26,17 @@ export default function GroupsView({ navigate, user }: Props) {
   const [collaborativeNotes, setCollaborativeNotes] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [filterUser, setFilterUser] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const filteredMessages = chatMessages.filter(msg => {
+    const matchesUser = filterUser ? msg.userName.toLowerCase().includes(filterUser.toLowerCase()) : true;
+    const msgDate = new Date(msg.timestamp);
+    const matchesStartDate = startDate ? msgDate >= new Date(startDate) : true;
+    const matchesEndDate = endDate ? msgDate <= new Date(endDate) : true;
+    return matchesUser && matchesStartDate && matchesEndDate;
+  });
 
   useEffect(() => {
     setGroups(getStudyGroups());
@@ -370,29 +381,52 @@ export default function GroupsView({ navigate, user }: Props) {
               {/* Chat/Notes Content */}
               <div className="flex-1 overflow-y-auto p-6">
                 {activeTab === 'chat' ? (
-                  <div className="space-y-4">
-                    {chatMessages.length === 0 ? (
-                      <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
-                        <MessageCircle className="w-12 h-12 mb-4" />
-                        <p>No messages yet. Start the conversation!</p>
-                      </div>
-                    ) : (
-                      chatMessages.map((msg) => (
-                        <div key={msg.id} className={`flex flex-col ${msg.userId === user.id ? 'items-end' : 'items-start'}`}>
-                          <div className="flex items-center mb-1 gap-2">
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{msg.userName}</span>
-                            <span className="text-[10px] text-gray-600">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          </div>
-                          <div className={`px-4 py-2 rounded-2xl max-w-[80%] ${
-                            msg.userId === user.id 
-                              ? 'bg-indigo-600 text-white rounded-tr-none' 
-                              : 'bg-white/5 text-gray-300 rounded-tl-none border border-white/5'
-                          }`}>
-                            {msg.text}
-                          </div>
+                  <div className="space-y-6">
+                    <div className="bg-[#0F0E17] p-4 rounded-xl border border-[rgba(124,58,237,0.2)] grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <input 
+                        type="text" 
+                        value={filterUser}
+                        onChange={e => setFilterUser(e.target.value)}
+                        placeholder="Filter by user..."
+                        className="bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+                      />
+                      <input 
+                        type="date" 
+                        value={startDate}
+                        onChange={e => setStartDate(e.target.value)}
+                        className="bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+                      />
+                      <input 
+                        type="date" 
+                        value={endDate}
+                        onChange={e => setEndDate(e.target.value)}
+                        className="bg-[#1A1830] border border-[rgba(124,58,237,0.2)] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div className="space-y-4">
+                      {filteredMessages.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
+                          <MessageCircle className="w-12 h-12 mb-4" />
+                          <p>No messages found matching filters.</p>
                         </div>
-                      ))
-                    )}
+                      ) : (
+                        filteredMessages.map((msg) => (
+                          <div key={msg.id} className={`flex flex-col ${msg.userId === user.id ? 'items-end' : 'items-start'}`}>
+                            <div className="flex items-center mb-1 gap-2">
+                              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{msg.userName}</span>
+                              <span className="text-[10px] text-gray-600">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                            <div className={`px-4 py-2 rounded-2xl max-w-[80%] ${
+                              msg.userId === user.id 
+                                ? 'bg-indigo-600 text-white rounded-tr-none' 
+                                : 'bg-white/5 text-gray-300 rounded-tl-none border border-white/5'
+                            }`}>
+                              {msg.text}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <textarea

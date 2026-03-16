@@ -32,8 +32,13 @@ export default function Layout({ navigate, children, activeView, hideSidebar = f
     setTheme(newTheme);
   };
 
+  useEffect(() => {
+    if (!user) {
+      navigate('auth');
+    }
+  }, [user, navigate]);
+
   if (!user) {
-    navigate('auth');
     return null;
   }
 
@@ -49,6 +54,7 @@ export default function Layout({ navigate, children, activeView, hideSidebar = f
     { name: 'My Flashcards', icon: Layers, view: 'flashcards' as ViewName, section: 'main' },
     { name: 'My Notes', icon: FileText, view: 'notes' as ViewName, section: 'main' },
     { name: 'Presentations', icon: Presentation, view: 'presentation' as ViewName, section: 'main' },
+    { name: 'Mind Map', icon: Brain, view: 'mindmap' as ViewName, section: 'main' },
     { name: 'AI Chat', icon: MessageSquare, view: 'chat' as ViewName, section: 'main' },
     { name: 'Voice Tutor', icon: Mic, view: 'voice_tutor' as ViewName, section: 'main' },
     { name: 'Mock Exams', icon: Target, view: 'quiz' as ViewName, section: 'main' },
@@ -70,7 +76,7 @@ export default function Layout({ navigate, children, activeView, hideSidebar = f
             <p className="text-gray-400 mb-6">Are you sure you want to log out of your account?</p>
             <div className="flex gap-4">
               <Button onClick={() => setShowLogoutModal(false)} variant="ghost" className="flex-1">Cancel</Button>
-              <Button onClick={handleLogout} variant="danger" className="flex-1">Logout</Button>
+              <Button onClick={handleLogout} variant="danger" className="flex-1"><LogOut className="w-4 h-4 mr-2" /> Logout</Button>
             </div>
           </div>
         </div>

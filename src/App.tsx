@@ -23,7 +23,7 @@ import AnalyticsView from './views/AnalyticsView';
 import PlannerView from './views/PlannerView';
 import GroupsView from './views/GroupsView';
 import VoiceTutorView from './views/VoiceTutorView';
-import { getCurrentUser, isAdmin, setCurrentUser } from './store';
+import { getCurrentUser, isAdmin, setCurrentUser, getTheme } from './store';
 import { supabase } from './lib/supabase';
 
 export type ViewName = 'landing' | 'auth' | 'dashboard' | 'upload' | 'flashcards' | 'notes' | 'pricing' | 'payment_pending' | 'admin_login' | 'admin_panel' | 'profile' | 'activity' | 'presentation' | 'chat' | 'todos' | 'quiz' | 'mindmap' | 'focus' | 'analytics' | 'planner' | 'groups' | 'voice_tutor';
@@ -53,6 +53,11 @@ export default function App() {
       }
     });
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const theme = getTheme();
+    document.documentElement.classList.toggle('light', theme === 'light');
   }, []);
 
   // Listen for storage changes (for theme/user updates)
@@ -104,7 +109,7 @@ export default function App() {
 
   return (
     <ToastProvider>
-      <div className={`min-h-screen relative overflow-hidden ${user?.settings?.theme === 'light' ? 'light' : ''}`}>
+      <div className="min-h-screen relative overflow-hidden">
         {/* Background Orbs */}
         <div className="orb orb-1"></div>
         <div className="orb orb-2"></div>

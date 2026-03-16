@@ -15,6 +15,23 @@ export default function AdminPanelView({ navigate }: Props) {
   const [activeTab, setActiveTab] = useState<'users' | 'payments' | 'stats'>('payments');
   const [searchTerm, setSearchTerm] = useState('');
 
+  const { filteredUsers, pendingSubs, pastSubs, stats } = React.useMemo(() => {
+    const filtered = users.filter(u => 
+      u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      u.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    const pending = subscriptions.filter(s => s.status === 'pending');
+    const past = subscriptions.filter(s => s.status !== 'pending');
+    
+    // Calculate stats
+    const totalUploads = getUploads().length;
+    const usage = getUsage();
+    const totalInteractions = usage.length;
+    const avgInteractions = users.length > 0 ? (totalInteractions / users.length).toFixed(1) : 0;
+    
+    return { filteredUsers: filtered, pendingSubs: pending, pastSubs: past, stats: { totalUploads, totalInteractions, avgInteractions } };
+  }, [users, subscriptions, searchTerm]);
+
   useEffect(() => {
     if (!isAdmin()) {
       navigate('admin_login');
@@ -53,6 +70,8 @@ export default function AdminPanelView({ navigate }: Props) {
         const currentUser = JSON.parse(currentUserStr);
         if (currentUser && currentUser.id === currentUsers[userIndex].id) {
           localStorage.setItem('sf_current_user', JSON.stringify(currentUsers[userIndex]));
+          localStorage.setItem('sf_approval_triggered', 'true');
+          localStorage.setItem('sf_approved_user_id', currentUsers[userIndex].id.toString());
         }
       }
     }
@@ -94,14 +113,6 @@ export default function AdminPanelView({ navigate }: Props) {
       setUsersState(currentUsers);
     }
   };
-
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const pendingSubs = subscriptions.filter(s => s.status === 'pending');
-  const pastSubs = subscriptions.filter(s => s.status !== 'pending');
 
   if (!isAdmin()) return null;
 
@@ -319,9 +330,9 @@ export default function AdminPanelView({ navigate }: Props) {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
                 {[
                   { label: 'Total Users', value: users.length, icon: Users, color: 'text-blue-400' },
-                  { label: 'Total Uploads', value: getUploads().length, icon: FileText, color: 'text-purple-400' },
-                  { label: 'Total Interactions', value: getUsage().length, icon: MessageSquare, color: 'text-indigo-400' },
-                  { label: 'Avg. Interactions', value: users.length > 0 ? (getUsage().length / users.length).toFixed(1) : 0, icon: TrendingUp, color: 'text-emerald-400' },
+                  { label: 'Total Uploads', value: stats.totalUploads, icon: FileText, color: 'text-purple-400' },
+                  { label: 'Total Interactions', value: stats.totalInteractions, icon: MessageSquare, color: 'text-indigo-400' },
+                  { label: 'Avg. Interactions', value: stats.avgInteractions, icon: TrendingUp, color: 'text-emerald-400' },
                 ].map((stat, i) => (
                   <motion.div 
                     key={stat.label}

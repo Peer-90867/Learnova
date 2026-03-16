@@ -205,6 +205,26 @@ export default function FocusView({ navigate, user }: Props) {
         </div>
 
         <div className="mt-12 glass-card p-8 rounded-3xl border border-white/5">
+          <h3 className="text-xl font-bold text-white mb-6">Quick Start</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[15, 25, 45, 60].map(mins => (
+              <Button
+                key={mins}
+                onClick={() => {
+                  setTimeLeft(mins * 60);
+                  setIsActive(true);
+                  setMode('pomodoro');
+                }}
+                variant="secondary"
+                className="py-4 font-bold"
+              >
+                {mins} Minutes
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-12 glass-card p-8 rounded-3xl border border-white/5">
           <h3 className="text-xl font-bold text-white mb-4">Focus Tips</h3>
           <ul className="space-y-3 text-gray-400">
             <li className="flex items-start">

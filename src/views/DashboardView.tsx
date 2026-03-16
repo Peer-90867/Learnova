@@ -31,6 +31,7 @@ export default function DashboardView({ navigate, user }: Props) {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [quote, setQuote] = useState('');
+  const [showApprovalOverlay, setShowApprovalOverlay] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -44,6 +45,13 @@ export default function DashboardView({ navigate, user }: Props) {
     // Select a random quote
     const randomQuote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
     setQuote(randomQuote);
+
+    // Check for approval
+    const triggered = localStorage.getItem('sf_approval_triggered');
+    const approvedUserId = localStorage.getItem('sf_approved_user_id');
+    if (triggered === 'true' && approvedUserId === user.id.toString()) {
+      setShowApprovalOverlay(true);
+    }
   }, [user?.id]);
 
   if (!user) return null;
@@ -127,6 +135,37 @@ export default function DashboardView({ navigate, user }: Props) {
 
   return (
     <Layout navigate={navigate} activeView="dashboard">
+      {showApprovalOverlay && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-[100] bg-[#0F0E17] flex flex-col items-center justify-center p-8 text-center"
+        >
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+            className="max-w-md w-full"
+          >
+            <div className="text-6xl mb-6">🎉</div>
+            <h1 className="text-4xl font-bold text-white mb-4">Request Approved!</h1>
+            <p className="text-gray-400 text-lg mb-8">
+              Congratulations! Your account has been upgraded to the Pro plan. Enjoy all the new features!
+            </p>
+            <Button 
+              onClick={() => {
+                setShowApprovalOverlay(false);
+                localStorage.removeItem('sf_approval_triggered');
+                localStorage.removeItem('sf_approved_user_id');
+              }}
+              className="w-full bg-gradient-primary text-white font-bold py-4 rounded-xl"
+            >
+              Return to Dashboard
+            </Button>
+          </motion.div>
+        </motion.div>
+      )}
+
       <div className="p-8 max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">

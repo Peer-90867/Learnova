@@ -4,7 +4,7 @@ import Layout from '../components/Layout';
 import { getCurrentUser, getUploads, getCurrentDocumentId, addUsage, User, MindMap, MindMapNode, setMindMaps, getMindMaps, getCache, setCache } from '../store';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, Type } from '@google/genai';
-import { Loader2, AlertCircle, Share2, Download, RefreshCw, GitBranch, Maximize2, ZoomIn, ZoomOut, Search, Palette, ChevronRight, ChevronDown, FileJson, Image as ImageIcon } from 'lucide-react';
+import { Loader2, AlertCircle, Share2, Download, RefreshCw, GitBranch, Maximize2, Maximize, ZoomIn, ZoomOut, Search, Palette, ChevronRight, ChevronDown, FileJson, Image as ImageIcon } from 'lucide-react';
 import * as d3 from 'd3';
 import Button from '../components/Button';
 
@@ -191,9 +191,9 @@ export default function MindMapView({ navigate, user }: Props) {
         .x(d => d.y + margin.left)
         .y(d => d.x + margin.top))
       .attr("fill", "none")
-      .attr("stroke", themeColor)
-      .attr("stroke-opacity", 0.3)
-      .attr("stroke-width", 2);
+      .attr("stroke", "#4b5563")
+      .attr("stroke-opacity", 0.4)
+      .attr("stroke-width", 1.5);
 
     // Nodes
     const node = g.selectAll(".node")
@@ -211,15 +211,19 @@ export default function MindMapView({ navigate, user }: Props) {
     // Search matching
     const isMatch = (text: string) => searchQuery && text.toLowerCase().includes(searchQuery.toLowerCase());
 
-    node.append("circle")
-      .attr("r", d => d.depth === 0 ? 12 : 8)
+    // Node background
+    node.append("rect")
+      .attr("x", d => d.depth === 0 ? -60 : -10)
+      .attr("y", -15)
+      .attr("width", d => d.depth === 0 ? 120 : 20)
+      .attr("height", 30)
+      .attr("rx", 15)
       .attr("fill", d => {
-        if (isMatch(d.data.text)) return "#ef4444"; // Red for search match
-        return d.depth === 0 ? themeColor : d3.color(themeColor)?.brighter(d.depth * 0.5).toString() || themeColor;
+        if (isMatch(d.data.text)) return "#ef4444";
+        return d.depth === 0 ? themeColor : "#1f2937";
       })
-      .attr("stroke", "#fff")
-      .attr("stroke-width", d => isMatch(d.data.text) ? 3 : 2)
-      .style("filter", d => isMatch(d.data.text) ? "drop-shadow(0 0 8px #ef4444)" : "drop-shadow(0 0 4px rgba(0,0,0,0.3))");
+      .attr("stroke", "#374151")
+      .attr("stroke-width", 1);
 
     // Add collapse/expand indicator
     node.filter(d => d.data.children && d.data.children.length > 0)
@@ -233,13 +237,11 @@ export default function MindMapView({ navigate, user }: Props) {
 
     node.append("text")
       .attr("dy", ".35em")
-      .attr("x", d => d.children ? -18 : 18)
-      .attr("text-anchor", d => d.children ? "end" : "start")
+      .attr("text-anchor", "middle")
       .text(d => d.data.text)
       .attr("fill", d => isMatch(d.data.text) ? "#ef4444" : "#fff")
-      .style("font-size", d => d.depth === 0 ? "16px" : "12px")
+      .style("font-size", d => d.depth === 0 ? "14px" : "10px")
       .style("font-weight", d => (d.depth === 0 || isMatch(d.data.text)) ? "bold" : "500")
-      .style("text-shadow", "0 2px 4px rgba(0,0,0,0.8)")
       .style("pointer-events", "none");
 
     // Initial transform to center if first render
@@ -345,7 +347,9 @@ export default function MindMapView({ navigate, user }: Props) {
                   className={`w-8 h-8 rounded-lg transition-all p-0 ${themeColor === color.value ? 'scale-110 ring-2 ring-white' : 'opacity-50 hover:opacity-100'}`}
                   style={{ backgroundColor: color.value }}
                   title={color.name}
-                />
+                >
+                  <span className="sr-only">{color.name}</span>
+                </Button>
               ))}
             </div>
 
@@ -397,6 +401,20 @@ export default function MindMapView({ navigate, user }: Props) {
                 title="Zoom Out"
               >
                 <ZoomOut className="w-5 h-5" />
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (!document.fullscreenElement) {
+                    svgRef.current?.requestFullscreen();
+                  } else {
+                    document.exitFullscreen();
+                  }
+                }}
+                variant="ghost"
+                className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
+                title="Full Screen"
+              >
+                <Maximize className="w-5 h-5" />
               </Button>
               <Button 
                 onClick={() => {

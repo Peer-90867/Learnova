@@ -131,11 +131,30 @@ export interface StudyGroup {
   collaborativeDocument: string;
 }
 
+export const PLANS = {
+  free: { 
+    name: 'Free', 
+    price: 0, 
+    features: ['3 Document Uploads/mo', 'Basic Flashcards', 'AI Smart Notes'] 
+  },
+  pro: { 
+    name: 'Pro', 
+    price: 299, 
+    features: ['Unlimited Uploads', 'Advanced Flashcards', 'AI Smart Notes'] 
+  },
+  team: { 
+    name: 'Study Group', 
+    price: 999, 
+    features: ['5 Pro Accounts', 'Shared Flashcard Decks', 'Collaborative Notes', 'Priority Support'] 
+  },
+};
+
 export interface User {
   id: number;
   name: string;
   email: string;
   password?: string;
+  role?: 'user' | 'admin';
   plan: 'free' | 'pro' | 'team';
   subscriptionStatus: 'none' | 'pending' | 'active' | 'rejected';
   uploadsUsed: number;
@@ -333,6 +352,8 @@ export const updateStreak = () => {
 };
 
 export const isAdmin = (): boolean => {
+  const user = getCurrentUser();
+  if (user?.role === 'admin') return true;
   try {
     return sessionStorage.getItem('sf_admin') === 'true';
   } catch {
@@ -343,4 +364,14 @@ export const setAdmin = (status: boolean) => {
   try {
     sessionStorage.setItem('sf_admin', status ? 'true' : 'false');
   } catch {}
+  const user = getCurrentUser();
+  if (user) {
+    setCurrentUser({ ...user, role: status ? 'admin' : 'user' });
+    const users = getUsers();
+    const userIndex = users.findIndex(u => u.id === user.id);
+    if (userIndex > -1) {
+      users[userIndex].role = status ? 'admin' : 'user';
+      setUsers(users);
+    }
+  }
 };
